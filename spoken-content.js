@@ -8,7 +8,8 @@ jQuery( function( $ ) {
 	}
 
 	// @todo Bookmarklet!
-	$( document.body ).addClass( 'show-text-to-speech-controls' );
+	// @todo LocalStorage
+	$( document.body ).addClass( 'show-spoken-content-controls' );
 
 	// Stop playing when someone leaves. (Not sure why Chrome doesn't do this by default.)
 	$( window ).on( 'unload', function() {
@@ -28,8 +29,8 @@ jQuery( function( $ ) {
 	// @todo Allow clicking on word to start speaking from that point, or speak selection.
 	// @todo Add support for switching between languages.
 
-	$( document.body ).on( 'click', '.text-to-speech-controls-advanced', function() {
-		var voiceSelect = $( this ).closest( '.text-to-speech-controls' ).find( '.voice' );
+	$( document.body ).on( 'click', '.spoken-content-controls-advanced', function() {
+		var voiceSelect = $( this ).closest( '.spoken-content-controls' ).find( '.voice' );
 		if ( ! voiceSelect.is( ':empty' ) ) {
 			return;
 		}
@@ -46,7 +47,7 @@ jQuery( function( $ ) {
 		} );
 	} );
 
-	$( document.body ).on( 'click', '.text-to-speech-controls .play', function() {
+	$( document.body ).on( 'click', '.spoken-content-controls .play', function() {
 		var interParagraphDelay = 500, currentIndex = 0, deferred, currentUtterance, pauseBtn, voiceSelect, stopBtn, nextBtn, previousBtn, rateRange, pitchRange, speak, selection, entryContent, elementQueue;
 		selection = window.getSelection();
 		if ( currentDeferred ) {
@@ -54,13 +55,13 @@ jQuery( function( $ ) {
 		}
 		deferred = $.Deferred();
 		currentDeferred = deferred;
-		pauseBtn = $( this ).closest( '.text-to-speech-controls' ).find( '.pause' );
-		nextBtn = $( this ).closest( '.text-to-speech-controls' ).find( '.next' );
-		previousBtn = $( this ).closest( '.text-to-speech-controls' ).find( '.previous' );
-		stopBtn = $( this ).closest( '.text-to-speech-controls' ).find( '.stop' );
-		rateRange = $( this ).closest( '.text-to-speech-controls' ).find( '.rate' );
-		pitchRange = $( this ).closest( '.text-to-speech-controls' ).find( '.pitch' );
-		voiceSelect = $( this ).closest( '.text-to-speech-controls' ).find( '.voice' );
+		pauseBtn = $( this ).closest( '.spoken-content-controls' ).find( '.pause' );
+		nextBtn = $( this ).closest( '.spoken-content-controls' ).find( '.next' );
+		previousBtn = $( this ).closest( '.spoken-content-controls' ).find( '.previous' );
+		stopBtn = $( this ).closest( '.spoken-content-controls' ).find( '.stop' );
+		rateRange = $( this ).closest( '.spoken-content-controls' ).find( '.rate' );
+		pitchRange = $( this ).closest( '.spoken-content-controls' ).find( '.pitch' );
+		voiceSelect = $( this ).closest( '.spoken-content-controls' ).find( '.voice' );
 		pauseBtn.prop( 'disabled', false );
 		previousBtn.prop( 'disabled', false );
 		nextBtn.prop( 'disabled', false );
