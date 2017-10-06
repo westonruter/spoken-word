@@ -1,7 +1,8 @@
 /* global speechSynthesis, SpeechSynthesisUtterance */
+/* jshint es3: false, esversion: 6 */
 
 jQuery( function( $ ) {
-	var currentDeferred, voices, getVoices;
+	let currentDeferred, voices, getVoices;
 
 	if ( 'undefined' === typeof speechSynthesis || 'undefined' === typeof SpeechSynthesisUtterance ) {
 		return;
@@ -9,10 +10,10 @@ jQuery( function( $ ) {
 
 	// @todo Bookmarklet!
 	// @todo LocalStorage
-	$( document.body ).addClass( 'show-spoken-content-controls' );
+	document.body.classList.add( 'show-spoken-content-controls' );
 
 	// Stop playing when someone leaves. (Not sure why Chrome doesn't do this by default.)
-	$( window ).on( 'unload', function() {
+	window.addEventListener( 'unload', () => {
 		if ( currentDeferred ) {
 			currentDeferred.reject();
 		}
@@ -22,29 +23,65 @@ jQuery( function( $ ) {
 		if ( voices ) {
 			return voices;
 		}
-		voices = speechSynthesis.getVoices();
+		voices = speechSynthesis.getVoices().filter( ( voice ) => {
+			return voice.localService;
+		} );
 		return voices;
 	};
 
 	// @todo Allow clicking on word to start speaking from that point, or speak selection.
 	// @todo Add support for switching between languages.
 
+	// @todo Eliminate jQuery.
 	$( document.body ).on( 'click', '.spoken-content-controls-advanced', function() {
-		var voiceSelect = $( this ).closest( '.spoken-content-controls' ).find( '.voice' );
+		const voiceSelect = $( this ).closest( '.spoken-content-controls' ).find( '.voice' ), groups = {}, langCodes = [];
+		let langCode, i;
 		if ( ! voiceSelect.is( ':empty' ) ) {
 			return;
 		}
 
-		// @todo Option groups.
-		$.each( getVoices(), function() {
-			if ( this.localService ) {
-				voiceSelect.append( new Option(
-					this.name + ' (' + this.lang + ')',
-					this.name,
-					this['default']
+		getVoices().forEach( function( voice ) {
+			let langCode = voice.lang.replace( /-.*/, '' );
+			if ( ! groups[ langCode ] ) {
+				groups[ langCode ] = [];
+			}
+			groups[ langCode ].push( voice );
+		} );
+
+		const addGroup = ( code ) => {
+			const optgroup = document.createElement( 'optgroup' );
+			optgroup.label = code;
+			for ( const voice of groups[ code ] ) {
+				optgroup.appendChild( new Option(
+					voice.name + ' (' + voice.lang + ')',
+					voice.name,
+					voice['default']
 				) );
 			}
-		} );
+			voiceSelect.append( optgroup );
+		};
+
+		langCodes.push( ...Object.keys( groups ) );
+		i = langCodes.indexOf( document.documentElement.lang );
+		if ( -1 !== i ) {
+			langCodes.splice( i, 1 );
+			addGroup( document.documentElement.lang );
+		}
+		langCode = document.documentElement.lang.replace( /-.*/, '' );
+		i = langCodes.indexOf( langCode );
+		if ( -1 !== i ) {
+			langCodes.splice( i, 1 );
+			addGroup( langCode );
+		}
+		i = langCodes.indexOf( navigator.language );
+		if ( -1 !== i ) {
+			langCodes.splice( i, 1 );
+			addGroup( navigator.language );
+		}
+
+		for ( langCode of langCodes ) {
+			addGroup( langCode );
+		}
 	} );
 
 	$( document.body ).on( 'click', '.spoken-content-controls .play', function() {
@@ -67,33 +104,33 @@ jQuery( function( $ ) {
 		nextBtn.prop( 'disabled', false );
 		stopBtn.prop( 'disabled', false );
 
-		pauseBtn.on( 'click', function() {
+		pauseBtn.on( 'click', () => {
 			if ( speechSynthesis.paused ) {
 				deferred.notify( 'resume' );
 			} else {
 				deferred.notify( 'pause' );
 			}
 		} );
-		rateRange.on( 'change', function() {
+		rateRange.on( 'change', () => {
 			speak( currentIndex );
 		} );
-		pitchRange.on( 'change', function() {
+		pitchRange.on( 'change', () => {
 			speak( currentIndex );
 		} );
-		voiceSelect.on( 'change', function() {
+		voiceSelect.on( 'change', () => {
 			speak( currentIndex );
 		} );
-		stopBtn.on( 'click', function() {
+		stopBtn.on( 'click', () => {
 			deferred.reject();
 		} );
 
-		deferred.fail( function() {
+		deferred.fail( () => {
 			if ( currentUtterance ) {
 				speechSynthesis.cancel( currentUtterance );
 				currentUtterance = null;
 			}
 		} );
-		deferred.always( function() {
+		deferred.always( () => {
 			selection.removeAllRanges();
 			pauseBtn.prop( 'disabled', true );
 			stopBtn.prop( 'disabled', true );
@@ -111,16 +148,16 @@ jQuery( function( $ ) {
 		entryContent = $( this ).closest( '.entry-content' );
 		elementQueue = entryContent.find( ':header, p, li' ).get(); // @todo Add more?
 
-		previousBtn.on( 'click', function() {
+		previousBtn.on( 'click', () => {
 			currentIndex = Math.max( 0, currentIndex - 1 );
 			speak( currentIndex );
 		} );
-		nextBtn.on( 'click', function() {
+		nextBtn.on( 'click', () => {
 			currentIndex++;
 			speak( currentIndex );
 		} );
 
-		deferred.progress( function( action ) {
+		deferred.progress( ( action ) => {
 			if ( 'pause' === action && currentUtterance ) {
 				speechSynthesis.pause( currentUtterance );
 			} else if ( 'resume' === action && currentUtterance ) {
@@ -129,7 +166,7 @@ jQuery( function( $ ) {
 		} );
 
 		// @todo Let there be an index.
-		speak = function( index ) {
+		speak = ( index ) => {
 			var element, range, walker, previousNodesOffset, currentTextNode, langCountryCode, langCode, defaultVoice;
 			element = elementQueue[ index ];
 			if ( ! element ) {
@@ -165,20 +202,20 @@ jQuery( function( $ ) {
 
 			currentUtterance.voice = defaultVoice;
 			if ( voiceSelect.val() ) {
-				currentUtterance.voice = getVoices().find( function( voice ) {
+				currentUtterance.voice = getVoices().find( ( voice ) => {
 					return voiceSelect.val() === voice.name;
 				} ) || null;
 			}
 
 			// Make sure the right language is used.
-			if ( currentUtterance.voice && currentUtterance.voice.lang !== langCountryCode ) {
-				currentUtterance.voice = getVoices().find( function( voice ) {
+			if ( currentUtterance.voice && currentUtterance.voice.lang !== langCountryCode && currentUtterance.voice.lang.replace( /-.*/, '' ) !== langCode ) {
+				currentUtterance.voice = getVoices().find( ( voice ) => {
 					return voice.lang === langCountryCode;
 				} ) || null;
 
 				// Try just language without country.
 				if ( ! currentUtterance.voice ) {
-					currentUtterance.voice = getVoices().find( function( voice ) {
+					currentUtterance.voice = getVoices().find( ( voice ) => {
 						return voice.lang.replace( /-.*/, '' ) === langCode;
 					} );
 				}
@@ -188,7 +225,7 @@ jQuery( function( $ ) {
 			walker = document.createTreeWalker( element, NodeFilter.SHOW_TEXT, null, false );
 			previousNodesOffset = 0;
 			currentTextNode = walker.nextNode();
-			currentUtterance.onboundary = function( event ) {
+			currentUtterance.onboundary = ( event ) => {
 				var startOffset, currentToken;
 				if ( 'word' !== event.name ) {
 					return;
@@ -214,9 +251,9 @@ jQuery( function( $ ) {
 				}
 			};
 
-			currentUtterance.onend = function() {
+			currentUtterance.onend = () => {
 				currentIndex++;
-				setTimeout( function() {
+				setTimeout( () => {
 					speak( currentIndex );
 				}, interParagraphDelay * ( 1 / parseFloat( rateRange.prop( 'value' ) ) ) ); // @todo Vary by what is next, whether heading, li, or something else.
 			};
