@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Text to Speech
+ * Plugin Name: Spoken Content (Text to Speech)
  */
 
 add_filter( 'the_content', function( $content ) {
@@ -11,11 +11,16 @@ add_filter( 'the_content', function( $content ) {
 	?>
 	<fieldset hidden class="text-to-speech-controls">
 		<legend><?php esc_html_e( 'Speak Article' ); ?></legend>
-		<button type="button" class="play">Play</button>
-		<button type="button" class="pause-resume" disabled>
+		<!-- TODO: Dashicons or Unicode. -->
+		<button type="button" class="play">
+			Play
+		</button>
+		<button type="button" class="pause-resume pause" disabled>
 			Pause/Resume
 		</button>
-		<button type="button" class="stop" disabled>Stop</button>
+		<button type="button" class="stop" disabled>
+			Stop
+		</button>
 		<!-- Volume -->
 		<!-- Rate -->
 		<!-- Pitch -->

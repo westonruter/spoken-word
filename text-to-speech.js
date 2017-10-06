@@ -1,7 +1,7 @@
 /* global speechSynthesis, SpeechSynthesisUtterance */
 
 jQuery( function( $ ) {
-	var currentUtterance;
+	var currentDeferred;
 
 	if ( 'undefined' === typeof speechSynthesis || 'undefined' === typeof SpeechSynthesisUtterance ) {
 		return;
@@ -10,8 +10,8 @@ jQuery( function( $ ) {
 
 	// Stop playing when someone leaves. (Not sure why Chrome doesn't do this by default.)
 	$( window ).on( 'unload', function() {
-		if ( currentUtterance ) {
-			speechSynthesis.cancel( currentUtterance );
+		if ( currentDeferred ) {
+			currentDeferred.reject();
 		}
 	} );
 
@@ -20,32 +20,63 @@ jQuery( function( $ ) {
 	// @todo Add support for switching between languages.
 	// @todo Add pitch support. currentUtterance.pitch = 2;
 	// @todo Add rate support. currentUtterance.rate = 2;
-	$( document.body ).on( 'click', '.text-to-speech-controls .pause', function() {
-		if ( currentUtterance ) {
-			speechSynthesis.pause( currentUtterance );
-		}
-	});
 
 	$( document.body ).on( 'click', '.text-to-speech-controls .play', function() {
-		var interParagraphDelay = 500;
-
-		if ( currentUtterance ) {
-			speechSynthesis.cancel( currentUtterance );
+		var interParagraphDelay = 500, deferred, currentUtterance, pauseBtn, stopBtn, next;
+		var selection = window.getSelection();
+		if ( currentDeferred ) {
+			currentDeferred.reject();
 		}
+		deferred = $.Deferred();
+		currentDeferred = deferred;
+		pauseBtn = $( this ).closest( '.text-to-speech-controls' ).find( '.pause' );
+		stopBtn = $( this ).closest( '.text-to-speech-controls' ).find( '.stop' );
+		pauseBtn.prop( 'disabled', false );
+		stopBtn.prop( 'disabled', false );
+
+		pauseBtn.on( 'click', function() {
+			if ( speechSynthesis.paused ) {
+				deferred.notify( 'resume' );
+			} else {
+				deferred.notify( 'pause' );
+			}
+		} );
+		stopBtn.on( 'click', function() {
+			deferred.reject();
+		} );
+
+		deferred.fail( function() {
+			if ( currentUtterance ) {
+				speechSynthesis.cancel( currentUtterance );
+				currentUtterance = null;
+			}
+		} );
+		deferred.always( function() {
+			selection.removeAllRanges();
+			pauseBtn.prop( 'disabled', true );
+			pauseBtn.off( 'click' );
+			stopBtn.prop( 'disabled', true );
+			stopBtn.off( 'click' );
+		} );
 
 		var entryContent = $( this ).closest( '.entry-content' );
+		var elementQueue = entryContent.find( ':header, p, li' ).get(); // @todo Add more?
 
-		var elementQueue = entryContent.find( 'p, li' ).get();
+		deferred.progress( function( action ) {
+			if ( 'pause' === action && currentUtterance ) {
+				speechSynthesis.pause( currentUtterance );
+			} else if ( 'resume' === action && currentUtterance ) {
+				speechSynthesis.resume( currentUtterance );
+			}
+		} );
 
-		var selection = window.getSelection();
-		var finish = function() {
-			selection.removeAllRanges();
-		};
-
-		var readNextParagraph = function() {
-			var element = elementQueue.shift();
+		next = function() {
+			var element = elementQueue.shift(), range, walker, previousNodesOffset, currentTextNode;
 			if ( ! element ) {
-				finish();
+				deferred.resolve();
+				return;
+			}
+			if ( 'rejected' === deferred.state() || 'resolved' === deferred.state() ) {
 				return;
 			}
 
@@ -62,10 +93,10 @@ jQuery( function( $ ) {
 			}
 			currentUtterance = new SpeechSynthesisUtterance( element.textContent );
 
-			var range = document.createRange();
-			var walk = document.createTreeWalker( element, NodeFilter.SHOW_TEXT, null, false );
-			var previousNodesOffset = 0;
-			var currentTextNode = walk.nextNode();
+			range = document.createRange();
+			walker = document.createTreeWalker( element, NodeFilter.SHOW_TEXT, null, false );
+			previousNodesOffset = 0;
+			currentTextNode = walker.nextNode();
 			currentUtterance.onboundary = function( event ) {
 				var startOffset, currentToken;
 				if ( 'word' !== event.name ) {
@@ -73,13 +104,19 @@ jQuery( function( $ ) {
 				}
 				if ( event.charIndex >= previousNodesOffset + currentTextNode.length ) {
 					previousNodesOffset += currentTextNode.length;
-					currentTextNode = walk.nextNode();
+					currentTextNode = walker.nextNode();
 				}
 				startOffset = event.charIndex - previousNodesOffset;
+
+				// Handle case when resuming.
+				if ( startOffset < 0 ) {
+					return;
+				}
+
 				currentToken = event.currentTarget.text.substr( event.charIndex ).replace( /\W.*/, '' );
 				selection.removeAllRanges();
 
-				if ( $.inArray( currentToken, [ '.', '!', '?' ] ) ) {
+				if ( -1 === [ '.', '!', '?' ].indexOf( currentToken ) ) {
 					range.setStart( currentTextNode, startOffset );
 					range.setEnd( currentTextNode, Math.min( startOffset + currentToken.length, currentTextNode.length ) );
 					selection.addRange( range );
@@ -87,13 +124,13 @@ jQuery( function( $ ) {
 			};
 
 			currentUtterance.onend = function() {
-				setTimeout( readNextParagraph, interParagraphDelay );
+				setTimeout( next, interParagraphDelay ); // @todo Vary by what is next, whether heading, li, or something else.
 			};
 
 			speechSynthesis.speak( currentUtterance );
 		};
 
-		readNextParagraph();
+		next();
 
 	} );
 } );
