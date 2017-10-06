@@ -55,6 +55,7 @@ jQuery( function( $ ) {
 				optgroup.appendChild( new Option(
 					voice.name + ' (' + voice.lang + ')',
 					voice.name,
+					voice['default'],
 					voice['default']
 				) );
 			}
