@@ -63,6 +63,7 @@ jQuery( function( $ ) {
 		};
 
 		langCodes.push( ...Object.keys( groups ) );
+		langCodes.sort();
 		i = langCodes.indexOf( document.documentElement.lang );
 		if ( -1 !== i ) {
 			langCodes.splice( i, 1 );
