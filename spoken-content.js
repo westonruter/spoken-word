@@ -40,8 +40,21 @@ jQuery( function( $ ) {
 			return;
 		}
 
+		const entryContent = $( this ).closest( '.entry-content' );
+		const contentLangs = new Set();
+		entryContent.find( '[lang]' ).add( document.documentElement ).add( entryContent ).get().forEach( ( el ) => {
+			if ( el.lang ) {
+				contentLangs.add( el.lang );
+				contentLangs.add( el.lang.replace( /-.*/, '' ) );
+			}
+		} );
+
 		getVoices().forEach( function( voice ) {
 			let langCode = voice.lang.replace( /-.*/, '' );
+			if ( ! contentLangs.has( langCode ) && ! contentLangs.has( langCode ) ) {
+				return;
+			}
+
 			if ( ! groups[ langCode ] ) {
 				groups[ langCode ] = [];
 			}
@@ -87,20 +100,21 @@ jQuery( function( $ ) {
 	} );
 
 	$( document.body ).on( 'click', '.spoken-content-controls .play', function() {
-		var interParagraphDelay = 500, currentIndex = 0, deferred, currentUtterance, pauseBtn, voiceSelect, stopBtn, nextBtn, previousBtn, rateRange, pitchRange, speak, selection, entryContent, elementQueue;
+		var interParagraphDelay = 500, currentIndex = 0, deferred, controlsFieldset, currentUtterance, pauseBtn, voiceSelect, stopBtn, nextBtn, previousBtn, rateRange, pitchRange, speak, selection, entryContent, elementQueue;
 		selection = window.getSelection();
 		if ( currentDeferred ) {
 			currentDeferred.reject();
 		}
 		deferred = $.Deferred();
 		currentDeferred = deferred;
-		pauseBtn = $( this ).closest( '.spoken-content-controls' ).find( '.pause' );
-		nextBtn = $( this ).closest( '.spoken-content-controls' ).find( '.next' );
-		previousBtn = $( this ).closest( '.spoken-content-controls' ).find( '.previous' );
-		stopBtn = $( this ).closest( '.spoken-content-controls' ).find( '.stop' );
-		rateRange = $( this ).closest( '.spoken-content-controls' ).find( '.rate' );
-		pitchRange = $( this ).closest( '.spoken-content-controls' ).find( '.pitch' );
-		voiceSelect = $( this ).closest( '.spoken-content-controls' ).find( '.voice' );
+		controlsFieldset = $( this ).closest( '.spoken-content-controls' );
+		pauseBtn = controlsFieldset.find( '.pause' );
+		nextBtn = controlsFieldset.find( '.next' );
+		previousBtn = controlsFieldset.find( '.previous' );
+		stopBtn = controlsFieldset.find( '.stop' );
+		rateRange = controlsFieldset.find( '.rate' );
+		pitchRange = controlsFieldset.find( '.pitch' );
+		voiceSelect = controlsFieldset.find( '.voice' );
 		pauseBtn.prop( 'disabled', false );
 		previousBtn.prop( 'disabled', false );
 		nextBtn.prop( 'disabled', false );
