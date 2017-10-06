@@ -1,11 +1,13 @@
 /* global speechSynthesis, SpeechSynthesisUtterance */
 
 jQuery( function( $ ) {
-	var currentDeferred;
+	var currentDeferred, voices, getVoices;
 
 	if ( 'undefined' === typeof speechSynthesis || 'undefined' === typeof SpeechSynthesisUtterance ) {
 		return;
 	}
+
+	// @todo Bookmarklet!
 	$( document.body ).addClass( 'show-text-to-speech-controls' );
 
 	// Stop playing when someone leaves. (Not sure why Chrome doesn't do this by default.)
@@ -15,23 +17,53 @@ jQuery( function( $ ) {
 		}
 	} );
 
-	// @todo Chrome extension.
+	getVoices = function () {
+		if ( voices ) {
+			return voices;
+		}
+		voices = speechSynthesis.getVoices();
+		return voices;
+	};
+
 	// @todo Allow clicking on word to start speaking from that point, or speak selection.
 	// @todo Add support for switching between languages.
-	// @todo Add pitch support. currentUtterance.pitch = 2;
-	// @todo Add rate support. currentUtterance.rate = 2;
+
+	$( document.body ).on( 'click', '.text-to-speech-controls-advanced', function() {
+		var voiceSelect = $( this ).closest( '.text-to-speech-controls' ).find( '.voice' );
+		if ( ! voiceSelect.is( ':empty' ) ) {
+			return;
+		}
+
+		// @todo Option groups.
+		$.each( getVoices(), function() {
+			if ( this.localService ) {
+				voiceSelect.append( new Option(
+					this.name + ' (' + this.lang + ')',
+					this.name,
+					this['default']
+				) );
+			}
+		} );
+	} );
 
 	$( document.body ).on( 'click', '.text-to-speech-controls .play', function() {
-		var interParagraphDelay = 500, deferred, currentUtterance, pauseBtn, stopBtn, next;
-		var selection = window.getSelection();
+		var interParagraphDelay = 500, currentIndex = 0, deferred, currentUtterance, pauseBtn, voiceSelect, stopBtn, nextBtn, previousBtn, rateRange, pitchRange, speak, selection, entryContent, elementQueue;
+		selection = window.getSelection();
 		if ( currentDeferred ) {
 			currentDeferred.reject();
 		}
 		deferred = $.Deferred();
 		currentDeferred = deferred;
 		pauseBtn = $( this ).closest( '.text-to-speech-controls' ).find( '.pause' );
+		nextBtn = $( this ).closest( '.text-to-speech-controls' ).find( '.next' );
+		previousBtn = $( this ).closest( '.text-to-speech-controls' ).find( '.previous' );
 		stopBtn = $( this ).closest( '.text-to-speech-controls' ).find( '.stop' );
+		rateRange = $( this ).closest( '.text-to-speech-controls' ).find( '.rate' );
+		pitchRange = $( this ).closest( '.text-to-speech-controls' ).find( '.pitch' );
+		voiceSelect = $( this ).closest( '.text-to-speech-controls' ).find( '.voice' );
 		pauseBtn.prop( 'disabled', false );
+		previousBtn.prop( 'disabled', false );
+		nextBtn.prop( 'disabled', false );
 		stopBtn.prop( 'disabled', false );
 
 		pauseBtn.on( 'click', function() {
@@ -40,6 +72,15 @@ jQuery( function( $ ) {
 			} else {
 				deferred.notify( 'pause' );
 			}
+		} );
+		rateRange.on( 'change', function() {
+			speak( currentIndex );
+		} );
+		pitchRange.on( 'change', function() {
+			speak( currentIndex );
+		} );
+		voiceSelect.on( 'change', function() {
+			speak( currentIndex );
 		} );
 		stopBtn.on( 'click', function() {
 			deferred.reject();
@@ -54,13 +95,29 @@ jQuery( function( $ ) {
 		deferred.always( function() {
 			selection.removeAllRanges();
 			pauseBtn.prop( 'disabled', true );
-			pauseBtn.off( 'click' );
 			stopBtn.prop( 'disabled', true );
+			previousBtn.prop( 'disabled', true );
+			nextBtn.prop( 'disabled', true );
+			pauseBtn.off( 'click' );
 			stopBtn.off( 'click' );
+			nextBtn.off( 'click' );
+			previousBtn.off( 'click' );
+			rateRange.off( 'change' );
+			pitchRange.off( 'change' );
+			voiceSelect.off( 'change' );
 		} );
 
-		var entryContent = $( this ).closest( '.entry-content' );
-		var elementQueue = entryContent.find( ':header, p, li' ).get(); // @todo Add more?
+		entryContent = $( this ).closest( '.entry-content' );
+		elementQueue = entryContent.find( ':header, p, li' ).get(); // @todo Add more?
+
+		previousBtn.on( 'click', function() {
+			currentIndex = Math.max( 0, currentIndex - 1 );
+			speak( currentIndex );
+		} );
+		nextBtn.on( 'click', function() {
+			currentIndex++;
+			speak( currentIndex );
+		} );
 
 		deferred.progress( function( action ) {
 			if ( 'pause' === action && currentUtterance ) {
@@ -70,8 +127,10 @@ jQuery( function( $ ) {
 			}
 		} );
 
-		next = function() {
-			var element = elementQueue.shift(), range, walker, previousNodesOffset, currentTextNode;
+		// @todo Let there be an index.
+		speak = function( index ) {
+			var element, range, walker, previousNodesOffset, currentTextNode, langCountryCode, langCode, defaultVoice;
+			element = elementQueue[ index ];
 			if ( ! element ) {
 				deferred.resolve();
 				return;
@@ -79,19 +138,50 @@ jQuery( function( $ ) {
 			if ( 'rejected' === deferred.state() || 'resolved' === deferred.state() ) {
 				return;
 			}
+			langCountryCode = element.lang || document.documentElement.lang; // @todo Recursively look?
+			langCode = langCountryCode.replace( /-.*/, '' );
 
+			// @todo Let this be in the footer fixed when playing?
 			// @todo Smooth scrolling.
-			if ( element.scrollIntoViewIfNeeded ) {
-				element.scrollIntoViewIfNeeded();
-			} else {
-				element.scrollIntoView();
-			}
+			// if ( element.scrollIntoViewIfNeeded ) {
+			// 	element.scrollIntoViewIfNeeded();
+			// } else {
+			// 	element.scrollIntoView();
+			// }
 
 			if ( currentUtterance ) {
+				currentUtterance.onend = null;
 				speechSynthesis.cancel( currentUtterance );
 				currentUtterance = null;
 			}
 			currentUtterance = new SpeechSynthesisUtterance( element.textContent );
+			currentUtterance.pitch = parseFloat( pitchRange.prop( 'value' ) );
+			currentUtterance.rate = parseFloat( rateRange.prop( 'value' ) );
+
+			defaultVoice = getVoices().find( function( voice ) {
+				return voice['default'];
+			} );
+
+			currentUtterance.voice = defaultVoice;
+			if ( voiceSelect.val() ) {
+				currentUtterance.voice = getVoices().find( function( voice ) {
+					return voiceSelect.val() === voice.name;
+				} ) || null;
+			}
+
+			// Make sure the right language is used.
+			if ( currentUtterance.voice && currentUtterance.voice.lang !== langCountryCode ) {
+				currentUtterance.voice = getVoices().find( function( voice ) {
+					return voice.lang === langCountryCode;
+				} ) || null;
+
+				// Try just language without country.
+				if ( ! currentUtterance.voice ) {
+					currentUtterance.voice = getVoices().find( function( voice ) {
+						return voice.lang.replace( /-.*/, '' ) === langCode;
+					} );
+				}
+			}
 
 			range = document.createRange();
 			walker = document.createTreeWalker( element, NodeFilter.SHOW_TEXT, null, false );
@@ -124,13 +214,16 @@ jQuery( function( $ ) {
 			};
 
 			currentUtterance.onend = function() {
-				setTimeout( next, interParagraphDelay ); // @todo Vary by what is next, whether heading, li, or something else.
+				currentIndex++;
+				setTimeout( function() {
+					speak( currentIndex );
+				}, interParagraphDelay * ( 1 / parseFloat( rateRange.prop( 'value' ) ) ) ); // @todo Vary by what is next, whether heading, li, or something else.
 			};
 
 			speechSynthesis.speak( currentUtterance );
 		};
 
-		next();
+		speak( currentIndex );
 
 	} );
 } );
