@@ -23,6 +23,8 @@
     "babel-loader": "^7.1.2",
     "babel-preset-env": "^1.6.1",
     "eslint": "^4.13.1",
+    "eslint-config-wordpress": "^2.0.0",
+    "source-map-loader": "^0.2.3",
     "webpack": "^3.10.0"
   }
 }

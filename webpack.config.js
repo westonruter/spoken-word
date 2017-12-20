@@ -6,9 +6,20 @@ module.exports = {
 		path: path.resolve( __dirname, 'dist' ),
 		filename: 'app.js'
 	},
+	devtool: 'source-map',
 	module: {
 		rules: [
-			{ test: /\.js$/, exclude: /node_modules/, loader: "babel-loader" }
+			{
+				test: /\.js$/,
+				exclude: /node_modules/,
+				loader: "babel-loader"
+			},
+			{
+				test: /\.js$/,
+				exclude: /node_modules/,
+				use: [ "source-map-loader" ],
+				enforce: "pre"
+			}
 		]
 	}
 };

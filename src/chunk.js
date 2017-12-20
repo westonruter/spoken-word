@@ -2,12 +2,12 @@
  * A segment of text nodes that are to be read by the TTS engine.
  *
  * @typedef {object} Chunk
- * @property {Array}  nodes    - Text nodes.
- * @property {string} language - Language for text nodes.
- * @property
+ * @property {Array}   nodes    - Text nodes.
+ * @property {string}  language - Language for text nodes.
+ * @property {Element} root     - Container element.
  */
 
-const DEFAULT_ROOT_WHITELIST_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, dt, dd, figcaption';
+const DEFAULT_ROOT_WHITELIST_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, q, dt, dd, figcaption';
 const DEFAULT_LEAF_BLACKLIST_SELECTOR = 'sup, sub';
 
 /**
@@ -18,9 +18,9 @@ const DEFAULT_LEAF_BLACKLIST_SELECTOR = 'sup, sub';
  */
 function findLanguage( startElement ) {
 	let element = startElement;
-	while ( element ) {
-		if ( element.language ) {
-			return element.language;
+	while ( element && element.nodeType === Node.ELEMENT_NODE ) {
+		if ( element.lang ) {
+			return element.lang;
 		}
 		element = element.parentNode;
 	}
@@ -34,17 +34,17 @@ function findLanguage( startElement ) {
  * by iteration. Chunk up nodes by language, queue of stuff to read informed
  * by subsequent element to know pause.
  *
- * @param {Object} args - Arguments
- * @param {Element}         args.containerElement - Container element.
+ * @param {Object}          args                   - Arguments
+ * @param {Element}         args.containerElement  - Container element.
  * @param {string|Function} args.rootIncludeFilter - CSS selector or function which is used to find chunk root elements.
  * @param {string|Function} args.leafExcludeFilter - CSS selector or function which is used to exclude text node parent elements inside chunk roots.
  * @returns {Chunk[]}
  */
-export default function chunkify( {
+export default function chunkify({
 	containerElement,
 	rootIncludeFilter = DEFAULT_ROOT_WHITELIST_SELECTOR,
-	leafExcludeFilter = DEFAULT_LEAF_BLACKLIST_SELECTOR,
-} ) {
+	leafExcludeFilter = DEFAULT_LEAF_BLACKLIST_SELECTOR
+}) {
 
 	// Make sure filters are functions when selector strings are supplied.
 	if ( 'string' === typeof rootIncludeFilter ) {
@@ -56,35 +56,81 @@ export default function chunkify( {
 		leafExcludeFilter = ( element ) => element.matches( leafExcludeSelector );
 	}
 
+	/**
+	 * Chunks.
+	 *
+	 * @type {Chunk[]}
+	 */
 	const chunks = [];
-	let currentChunk;
 
-	// @todo Find the root element language.
+	/**
+	 * Root element stack.
+	 *
+	 * @type {Element[]}
+	 */
+	const rootElementStack = [];
 
-	// Find all of the text nodes in the container element
-	// @todo The following only works when we don't have to split chunks inside of an element. We can't use the tree walker.
-	const walker = document.createTreeWalker(
-		containerElement,
-		NodeFilter.SHOW_ALL,
-		{
-			acceptNode: ( node ) => {
-				if ( node.nodeType === Node.ELEMENT_NODE && leafExcludeFilter( node ) ) {
-					return NodeFilter.FILTER_REJECT;
-				}
-				if ( node.nodeType === Node.TEXT_NODE ) {
-					return NodeFilter.FILTER_ACCEPT;
-				}
-				return NodeFilter.FILTER_SKIP;
+	/**
+	 * Add chunk text node.
+	 *
+	 * @param {Node}   textNode - Text node.
+	 * @param {string} language - Language.
+	 * @returns {void}
+	 */
+	const addChunkNode = ( textNode, language ) => {
+		if ( /^\s+$/.test( textNode.nodeValue ) ) {
+			return;
+		}
+		const root = rootElementStack[ rootElementStack.length - 1 ];
+		if ( ! root ) {
+			return;
+		}
+		let currentChunk = chunks[ chunks.length - 1 ];
+		if ( ! currentChunk || currentChunk.language !== language || root !== currentChunk.root ) {
+			currentChunk = {
+				language,
+				nodes: [],
+				root
+			};
+			chunks.push( currentChunk );
+		}
+		currentChunk.nodes.push( textNode );
+	};
+
+	/**
+	 * Process element.
+	 *
+	 * @param {Element} element - DOM Element.
+	 * @returns {void}
+	 */
+	const processElement = ( element ) => {
+		const elementLanguage = findLanguage( element );
+		const isRootChunkElement = rootIncludeFilter( element );
+		if ( isRootChunkElement ) {
+			rootElementStack.push( element );
+		}
+
+		for ( const childNode of element.childNodes ) {
+			switch ( childNode.nodeType ) {
+				case Node.ELEMENT_NODE:
+					if ( ! leafExcludeFilter( childNode ) ) {
+						processElement( childNode );
+					}
+					break;
+				case Node.TEXT_NODE:
+					if ( 0 !== rootElementStack.length ) {
+						addChunkNode( childNode, elementLanguage );
+					}
+					break;
 			}
-		},
-		false
-	);
+		}
 
-	let string = '';
+		if ( isRootChunkElement ) {
+			rootElementStack.pop();
+		}
+	};
 
-	// @todo Current node is "important" we need to skip: <p>This is <sup>the <b>important</b> thing</sup> hello.</p>
-	while ( walker.nextNode() ) {
-		string += walker.currentNode.nodeValue;
-	}
+	processElement( containerElement );
 
+	return chunks;
 }
