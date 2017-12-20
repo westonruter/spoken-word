@@ -1,6 +1,7 @@
 /* global speechSynthesis, SpeechSynthesisUtterance */
 /* jshint es3: false, esversion: 6 */
 
+
 jQuery( function( $ ) {
 	let currentDeferred, voices, getVoices;
 
