@@ -1,6 +1,7 @@
 
 import chunkify from './chunkify';
 import Speech from './speech';
+import * as voices from './voices';
 
 /**
  *
@@ -42,14 +43,14 @@ function findContentRoots( root, selector ) {
  * @param {Array}  options.defaultVoicePrefs     - Default voice preferences.
  * @returns {Promise} Promise.
  */
-export function init({
+export function init( {
 	rootElement,
 	speechContentSelector = CONTENT_SELECTOR,
 	chunkifyOptions,
 	defaultRate = 1.0,
 	defaultPitch = 1.0,
 	defaultVoicePrefs
-} = {}) {
+} = {} ) {
 	return new Promise( ( resolve ) => {
 		if ( ! rootElement ) {
 			rootElement = document.body;
@@ -59,10 +60,10 @@ export function init({
 			const speechRoots = findContentRoots( rootElement, speechContentSelector );
 
 			for ( const speechRoot of speechRoots ) {
-				const speech = new Speech({
+				const speech = new Speech( {
 					rootElement: speechRoot,
 					chunkifyOptions
-				});
+				} );
 				speeches.push( speech );
 			}
 
@@ -70,12 +71,14 @@ export function init({
 			resolve();
 		};
 
-		if ( 'complete' === document.readyState || 'interactive' === document.readyState ) {
-			uponReady();
-		} else {
-			document.addEventListener( 'DOMContentLoaded', uponReady );
-		}
-	});
+		voices.load().then( () => {
+			if ( 'complete' === document.readyState || 'interactive' === document.readyState ) {
+				uponReady();
+			} else {
+				document.addEventListener( 'DOMContentLoaded', uponReady );
+			}
+		} );
+	} );
 }
 
 // @todo Add collection for all articles. An article makes use of chunkify.

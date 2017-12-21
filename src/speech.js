@@ -7,13 +7,13 @@ export default class Speech {
 	// @todo Make sure that when an utterance starts, all other articles in the collection get their utterances paused.
 	// @todo Destroy method should stop utterance.
 
-	constructor({
+	constructor( {
 		rootElement,
 		defaultVoicePrefs = [],
 		defaultRate = 1.0,
 		defaultPitch = 1.0,
 		chunkifyOptions
-	}) {
+	} ) {
 		this.rootElement = rootElement;
 		this.defaultVoicePrefs = defaultVoicePrefs;
 		this.defaultRate = defaultRate;
@@ -32,7 +32,7 @@ export default class Speech {
 		// Probably a bug in Chrome that utterance is not canceled upon unload.
 		window.addEventListener( 'unload', () => {
 			this.stop();
-		});
+		} );
 
 		this.chunkify();
 
@@ -82,6 +82,50 @@ export default class Speech {
 	}
 
 	/**
+	 * Get voice.
+	 *
+	 * @todo Allow different voices for quotations and headings.
+	 * @param {Chunk} chunk      - Chunk
+	 * @returns {Object} Props for voice, pitch, and rate.
+	 */
+	getUtteranceOptions( chunk ) {
+		const voices = speechSynthesis.getVoices().filter( ( voice ) => voice.localService );
+		if ( voices.length === 0 ) {
+			throw new Error( 'No local voices available.' );
+		}
+		const defaultVoice = voices.find( ( voice ) => voice.default );
+		const props = {
+			voice: defaultVoice,
+			pitch: this.defaultPitch,
+			rate: this.defaultRate
+		};
+
+		if ( chunk.language ) {
+			const chunkBaseLanguage = chunk.language.replace( /-.*/, '' );
+
+			if ( ! props.voice.lang.startsWith( chunkBaseLanguage ) ) {
+				const languageVoices = voices.filter( ( voice ) => voice.lang.startsWith( chunkBaseLanguage ) );
+				const sameLanguageBaseVoices = [];
+				const identicalLanguageVoices = [];
+				for ( const voice of languageVoices ) {
+					if ( voice.lang.toLowerCase() === chunk.language ) {
+						identicalLanguageVoices.push( voice );
+					} else if ( voice.lang.startsWith( chunkBaseLanguage ) ) {
+						sameLanguageBaseVoices.push( voice );
+					}
+				}
+				if ( identicalLanguageVoices.length > 0 ) {
+					props.voice = identicalLanguageVoices[ 0 ];
+				} else if ( sameLanguageBaseVoices.length > 0 ) {
+					props.voice = sameLanguageBaseVoices[ 0 ];
+				}
+			}
+		}
+
+		return props;
+	}
+
+	/**
 	 * Speak chunk.
 	 *
 	 * @param {number} chunkIndex - Chunk index.
@@ -89,7 +133,7 @@ export default class Speech {
 	 */
 	speakChunk( chunkIndex ) {
 		return new Promise( ( resolve, reject ) => {
-			const chunk = this.chunks[ this.currentChunk ];
+			const chunk = this.chunks[ chunkIndex ];
 			if ( ! chunk ) {
 				reject();
 				return;
@@ -101,8 +145,7 @@ export default class Speech {
 			let previousNodesOffset = 0;
 
 			this.currentUtterance = new SpeechSynthesisUtterance( text );
-			this.currentUtterance.pitch = this.defaultPitch;
-			this.currentUtterance.rate = this.defaultRate;
+			Object.assign( this.currentUtterance, this.getUtteranceOptions( chunk ) );
 
 			const nextNodes = [ ...chunk.nodes ];
 			let currentTextNode = nextNodes.shift();
@@ -114,14 +157,14 @@ export default class Speech {
 					previousNodesOffset += currentTextNode.length;
 					currentTextNode = nextNodes.shift();
 				}
-				let startOffset = event.charIndex - previousNodesOffset;
+				const startOffset = event.charIndex - previousNodesOffset;
 
 				// Handle case when resuming (sometimes).
 				if ( startOffset < 0 ) {
 					return;
 				}
 
-				let currentToken = event.currentTarget.text.substr( event.charIndex ).replace( /\W.*/, '' );
+				const currentToken = event.currentTarget.text.substr( event.charIndex ).replace( /\W.*/, '' );
 				selection.removeAllRanges();
 
 				if ( /\w/.test( currentToken ) ) {
@@ -139,7 +182,7 @@ export default class Speech {
 			};
 
 			speechSynthesis.speak( this.currentUtterance );
-		});
+		} );
 	}
 
 	pause() {
@@ -152,7 +195,7 @@ export default class Speech {
 	previous() {
 		this.stop();
 		this.currentChunk = Math.max( this.currentChunk - 2, 0 ); // @todo Index diff verify.
-		this.play();
+		this.play(); // @todo This night need to be done at nextTick.
 	}
 
 	next() {
@@ -161,7 +204,7 @@ export default class Speech {
 		if ( this.currentChunk >= this.chunks.length ) {
 			this.currentChunk = 0;
 		} else {
-			this.play();
+			this.play(); // @todo This night need to be done at nextTick.
 		}
 	}
 

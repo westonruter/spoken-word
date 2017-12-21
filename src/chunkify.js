@@ -20,7 +20,7 @@ function findLanguage( startElement ) {
 	let element = startElement;
 	while ( element && element.nodeType === Node.ELEMENT_NODE ) {
 		if ( element.lang ) {
-			return element.lang;
+			return element.lang.toLowerCase();
 		}
 		element = element.parentNode;
 	}
