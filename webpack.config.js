@@ -4,7 +4,9 @@ module.exports = {
 	entry: './src/index.js',
 	output: {
 		path: path.resolve( __dirname, 'dist' ),
-		filename: 'app.js'
+		filename: 'app.js',
+		libraryTarget: 'window',
+		library: 'spokenWord'
 	},
 	devtool: 'source-map',
 	module: {
@@ -12,13 +14,13 @@ module.exports = {
 			{
 				test: /\.js$/,
 				exclude: /node_modules/,
-				loader: "babel-loader"
+				loader: 'babel-loader'
 			},
 			{
 				test: /\.js$/,
 				exclude: /node_modules/,
-				use: [ "source-map-loader" ],
-				enforce: "pre"
+				use: [ 'source-map-loader' ],
+				enforce: 'pre'
 			}
 		]
 	}

@@ -6,5 +6,9 @@
 	"parserOptions": {
 		"ecmaVersion": 6,
 		"sourceType": "module"
+	},
+	"rules": {
+		"valid-jsdoc": [2],
+		"yoda": [ 2, "always", { "onlyEquality": true } ]
 	}
 }
