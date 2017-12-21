@@ -20,6 +20,7 @@ export default class Speech {
 		this.defaultPitch = defaultPitch;
 		this.chunkifyOptions = chunkifyOptions;
 
+		this.state = 'stopped'; // @todo This should emit events for collection to list to.
 		this.currentChunk = 0;
 		this.currentUtterance = null;
 
@@ -51,27 +52,33 @@ export default class Speech {
 	/**
 	 * Play content.
 	 *
-	 * @returns {Promise} Resolves when playback finishes. Rejects if playback is interrupted.
+	 * @returns {void}
 	 */
 	play() {
-		return new Promise( ( resolve, reject ) => {
-			if ( this.currentChunk >= this.chunks.length ) {
-				this.currentChunk = 0;
-			}
-			const speakNextChunk = () => {
-				// @todo Decide on the delay depending on what the chunk root is.
+		if ( 'paused' === this.state ) {
+			this.resume();
+			return;
+		}
+		this.state = 'playing';
 
-				this.currentChunk += 1;
+		if ( this.currentChunk >= this.chunks.length ) {
+			this.currentChunk = 0;
+		}
 
-				console.info( 'speakChunk', this.currentChunk );
-				if ( this.currentChunk === this.chunks.length ) {
-					resolve();
-				} else {
-					this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
-				}
+		const reject = () => {}
+
+		const speakNextChunk = () => {
+			// @todo Decide on the delay depending on what the chunk root is.
+
+			this.currentChunk += 1;
+
+			if ( this.currentChunk === this.chunks.length ) {
+				this.state = 'stopped';
+			} else {
+				this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
 			}
-			this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
-		});
+		}
+		this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
 	}
 
 	/**
@@ -81,8 +88,13 @@ export default class Speech {
 	 * @returns {Promise} Resolves when completed.
 	 */
 	speakChunk( chunkIndex ) {
-		return new Promise( ( resolve ) => {
+		return new Promise( ( resolve, reject ) => {
 			const chunk = this.chunks[ this.currentChunk ];
+			if ( ! chunk ) {
+				reject();
+				return;
+			}
+			this.rejectSpeakChunk = reject;
 			const text = chunk.nodes.map( ( textNode ) => textNode.nodeValue ).join( '' );
 			const selection = window.getSelection();
 			const range = document.createRange();
@@ -92,10 +104,6 @@ export default class Speech {
 			this.currentUtterance.pitch = this.defaultPitch;
 			this.currentUtterance.rate = this.defaultRate;
 
-			// Will pause cause it to onend?
-			this.currentUtterance.onend = () => {
-				resolve();
-			};
 			const nextNodes = [ ...chunk.nodes ];
 			let currentTextNode = nextNodes.shift();
 			this.currentUtterance.onboundary = ( event ) => {
@@ -108,7 +116,7 @@ export default class Speech {
 				}
 				let startOffset = event.charIndex - previousNodesOffset;
 
-				// Handle case when resuming.
+				// Handle case when resuming (sometimes).
 				if ( startOffset < 0 ) {
 					return;
 				}
@@ -123,24 +131,53 @@ export default class Speech {
 				}
 			};
 
+			this.currentUtterance.onend = () => {
+				this.currentUtterance = null;
+				this.rejectSpeakChunk = null;
+				selection.removeAllRanges();
+				resolve();
+			};
+
 			speechSynthesis.speak( this.currentUtterance );
 		});
 	}
 
 	pause() {
 		if ( this.currentUtterance ) {
+			this.state = 'paused';
 			speechSynthesis.pause( this.currentUtterance );
 		}
 	}
 
+	previous() {
+		this.stop();
+		this.currentChunk = Math.max( this.currentChunk - 2, 0 ); // @todo Index diff verify.
+		this.play();
+	}
+
+	next() {
+		this.stop();
+		this.currentChunk++;
+		if ( this.currentChunk >= this.chunks.length ) {
+			this.currentChunk = 0;
+		} else {
+			this.play();
+		}
+	}
+
 	resume() {
+		this.state = 'playing';
 		if ( this.currentUtterance ) {
 			speechSynthesis.resume( this.currentUtterance );
 		}
 	}
 
 	stop() {
+		this.state = 'stopped';
 		if ( this.currentUtterance ) {
+			if ( this.rejectSpeakChunk ) {
+				this.rejectSpeakChunk();
+			}
 			speechSynthesis.cancel( this.currentUtterance );
 			this.currentUtterance = null;
 		}

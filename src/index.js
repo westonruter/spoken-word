@@ -64,19 +64,6 @@ export function init({
 					chunkifyOptions
 				});
 				speeches.push( speech );
-				speech.play();
-
-				// const content = new SpokenContent( root );
-
-				// @todo Content should handly chunkify and re-chunkify when subtree changes.
-				// const chunks = chunkify({
-				// 	containerElement: root,
-				// 	rootIncludeFilter: chunkRootIncludeFilter,
-				// 	leafExcludeFilter: chunkLeafExcludeFilter
-				// });
-				// // ChunkSet?
-				// // @todo ChunkReader
-				// console.info( chunks );
 			}
 
 			// @todo Add mutation observer to add new article roots dynamically.

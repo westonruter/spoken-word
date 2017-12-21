@@ -78,9 +78,12 @@ export default function chunkify({
 	 * @returns {void}
 	 */
 	const addChunkNode = ( textNode, language ) => {
-		if ( /^\s+$/.test( textNode.nodeValue ) ) {
+
+		// Skip nodes that don't contain words.
+		if ( ! /\w/.test( textNode.nodeValue ) ) {
 			return;
 		}
+
 		const root = rootElementStack[ rootElementStack.length - 1 ];
 		if ( ! root ) {
 			return;
