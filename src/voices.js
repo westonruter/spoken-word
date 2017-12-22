@@ -1,5 +1,4 @@
 
-
 export const list = [];
 
 const pendingPromiseCallbacks = [];

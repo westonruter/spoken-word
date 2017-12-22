@@ -1,9 +1,8 @@
 
 import chunkify from './chunkify';
-import * as voices from "./voices";
+import * as voices from './voices';
 
 export default class Speech {
-
 	// @todo Have reference to current utterance.
 	// @todo Make sure that when an utterance starts, all other articles in the collection get their utterances paused.
 	// @todo Destroy method should stop utterance.
@@ -13,7 +12,7 @@ export default class Speech {
 		defaultVoicePrefs = [],
 		defaultRate = 1.0,
 		defaultPitch = 1.0,
-		chunkifyOptions
+		chunkifyOptions,
 	} ) {
 		this.rootElement = rootElement;
 		this.defaultVoicePrefs = defaultVoicePrefs;
@@ -92,41 +91,44 @@ export default class Speech {
 	 * @returns {Object} Props for voice, pitch, and rate.
 	 */
 	getUtteranceOptions( chunk ) {
-		const voices = speechSynthesis.getVoices().filter( ( voice ) => voice.localService );
-		if ( voices.length === 0 ) {
-			throw new Error( 'No local voices available.' );
-		}
-		const defaultVoice = voices.find( ( voice ) => voice.default );
 		const props = {
-			voice: defaultVoice,
 			pitch: this.defaultPitch,
 			rate: this.defaultRate,
 		};
-
-		// @todo Break this into a separate method.
 		if ( chunk.language ) {
-			const chunkBaseLanguage = chunk.language.replace( /-.*/, '' );
+			props.voice = this.getVoice( chunk );
+		}
+		return props;
+	}
 
-			if ( ! props.voice.lang.startsWith( chunkBaseLanguage ) ) {
-				const languageVoices = voices.filter( ( voice ) => voice.lang.startsWith( chunkBaseLanguage ) );
-				const sameLanguageBaseVoices = [];
-				const identicalLanguageVoices = [];
-				for ( const voice of languageVoices ) {
-					if ( voice.lang.toLowerCase() === chunk.language ) {
-						identicalLanguageVoices.push( voice );
-					} else if ( voice.lang.startsWith( chunkBaseLanguage ) ) {
-						sameLanguageBaseVoices.push( voice );
-					}
-				}
-				if ( identicalLanguageVoices.length > 0 ) {
-					props.voice = identicalLanguageVoices[ 0 ];
-				} else if ( sameLanguageBaseVoices.length > 0 ) {
-					props.voice = sameLanguageBaseVoices[ 0 ];
-				}
+	/**
+	 * Get voice for chunk.
+	 *
+	 * @param {Chunk} chunk - Speech chunk.
+	 * @return {Object|null} Voice.
+	 */
+	getVoice( chunk ) {
+		const baseLanguage = chunk.language.replace( /-.*/, '' ).toLowerCase();
+		const localVoices = speechSynthesis.getVoices().filter( ( voice ) => voice.localService );
+		if ( localVoices.length === 0 ) {
+			return null;
+		}
+		const languageVoices = localVoices.filter( ( voice ) => voice.lang.toLowerCase().startsWith( baseLanguage ) );
+		const sameLanguageBaseVoices = [];
+		const identicalLanguageVoices = [];
+		for ( const voice of languageVoices ) {
+			if ( voice.lang.toLowerCase() === chunk.language ) {
+				identicalLanguageVoices.push( voice );
+			} else if ( voice.lang.startsWith( baseLanguage ) ) {
+				sameLanguageBaseVoices.push( voice );
 			}
 		}
-
-		return props;
+		if ( identicalLanguageVoices.length > 0 ) {
+			return identicalLanguageVoices[ 0 ];
+		} else if ( sameLanguageBaseVoices.length > 0 ) {
+			return sameLanguageBaseVoices[ 0 ];
+		}
+		return null;
 	}
 
 	/**
@@ -192,7 +194,7 @@ export default class Speech {
 	pause() {
 		if ( this.currentUtterance ) {
 			this.state = 'paused';
-			speechSynthesis.pause( this.currentUtterance );
+			speechSynthesis.pause();
 		}
 	}
 
@@ -215,7 +217,7 @@ export default class Speech {
 	resume() {
 		this.state = 'playing';
 		if ( this.currentUtterance ) {
-			speechSynthesis.resume( this.currentUtterance );
+			speechSynthesis.resume();
 		}
 	}
 
@@ -225,7 +227,7 @@ export default class Speech {
 			if ( this.rejectSpeakChunk ) {
 				this.rejectSpeakChunk();
 			}
-			speechSynthesis.cancel( this.currentUtterance );
+			speechSynthesis.cancel();
 			this.currentUtterance = null;
 		}
 	}

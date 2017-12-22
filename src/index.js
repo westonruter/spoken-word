@@ -44,22 +44,22 @@ export function init( {
 	rootElement,
 	speechContentSelector = CONTENT_SELECTOR,
 	chunkifyOptions,
-	defaultRate = 1.0,
+	defaultRate = 1.0, // @todo The options should really be stored globally, not just on a given site.
 	defaultPitch = 1.0,
-	defaultVoicePrefs
+	defaultVoicePrefs,
 } = {} ) {
 	return new Promise( ( resolve ) => {
-		if ( ! rootElement ) {
-			rootElement = document.body;
-		}
-
+		const element = rootElement || document.body;
 		const uponReady = () => {
-			const speechRoots = findContentRoots( rootElement, speechContentSelector );
+			const speechRoots = findContentRoots( element, speechContentSelector );
 
 			for ( const speechRoot of speechRoots ) {
 				const speech = new Speech( {
 					rootElement: speechRoot,
 					chunkifyOptions,
+					defaultRate,
+					defaultPitch,
+					defaultVoicePrefs,
 				} );
 				speeches.push( speech );
 			}

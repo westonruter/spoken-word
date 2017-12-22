@@ -40,20 +40,22 @@ function findLanguage( startElement ) {
  * @param {string|Function} args.chunkLeafExcludeFilter - CSS selector or function which is used to exclude text node parent elements inside chunk roots.
  * @returns {Chunk[]} Chunks.
  */
-export default function chunkify({
+export default function chunkify( {
 	containerElement,
 	chunkRootIncludeFilter = DEFAULT_ROOT_WHITELIST_SELECTOR,
-	chunkLeafExcludeFilter = DEFAULT_LEAF_BLACKLIST_SELECTOR
-}) {
+	chunkLeafExcludeFilter = DEFAULT_LEAF_BLACKLIST_SELECTOR,
+} ) {
+	let rootIncludeFilter = chunkRootIncludeFilter;
+	let leafExcludeFilter = chunkLeafExcludeFilter;
 
 	// Make sure filters are functions when selector strings are supplied.
-	if ( 'string' === typeof chunkRootIncludeFilter ) {
-		const rootIncludeSelector = chunkRootIncludeFilter;
-		chunkRootIncludeFilter = ( element ) => element.matches( rootIncludeSelector );
+	if ( 'string' === typeof rootIncludeFilter ) {
+		const rootIncludeSelector = rootIncludeFilter;
+		rootIncludeFilter = ( element ) => element.matches( rootIncludeSelector );
 	}
-	if ( 'string' === typeof chunkLeafExcludeFilter ) {
-		const leafExcludeSelector = chunkLeafExcludeFilter;
-		chunkLeafExcludeFilter = ( element ) => element.matches( leafExcludeSelector );
+	if ( 'string' === typeof leafExcludeFilter ) {
+		const leafExcludeSelector = leafExcludeFilter;
+		leafExcludeFilter = ( element ) => element.matches( leafExcludeSelector );
 	}
 
 	/**
@@ -78,7 +80,6 @@ export default function chunkify({
 	 * @returns {void}
 	 */
 	const addChunkNode = ( textNode, language ) => {
-
 		// Skip nodes that don't contain words.
 		if ( ! /\w/.test( textNode.nodeValue ) ) {
 			return;
@@ -93,7 +94,7 @@ export default function chunkify({
 			currentChunk = {
 				language,
 				nodes: [],
-				root
+				root,
 			};
 			chunks.push( currentChunk );
 		}
@@ -108,7 +109,7 @@ export default function chunkify({
 	 */
 	const processElement = ( element ) => {
 		const elementLanguage = findLanguage( element );
-		const isRootChunkElement = chunkRootIncludeFilter( element );
+		const isRootChunkElement = rootIncludeFilter( element );
 		if ( isRootChunkElement ) {
 			rootElementStack.push( element );
 		}
@@ -116,7 +117,7 @@ export default function chunkify({
 		for ( const childNode of element.childNodes ) {
 			switch ( childNode.nodeType ) {
 				case Node.ELEMENT_NODE:
-					if ( ! chunkLeafExcludeFilter( childNode ) ) {
+					if ( ! leafExcludeFilter( childNode ) ) {
 						processElement( childNode );
 					}
 					break;
@@ -124,6 +125,8 @@ export default function chunkify({
 					if ( 0 !== rootElementStack.length ) {
 						addChunkNode( childNode, elementLanguage );
 					}
+					break;
+				default:
 					break;
 			}
 		}
