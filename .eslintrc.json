@@ -40,7 +40,7 @@
 		"no-extra-semi": "error",
 		"no-fallthrough": "error",
 		"no-lonely-if": "error",
-		"no-magic-numbers": [ "error", { "ignore": [ 0, 1.0, 2 ] } ],
+		"no-magic-numbers": [ "error", { "ignore": [ 0, 1.0 ] } ],
 		"no-mixed-operators": "error",
 		"no-mixed-spaces-and-tabs": "error",
 		"no-multiple-empty-lines": [ "error", { "max": 1 } ],

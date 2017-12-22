@@ -8,6 +8,15 @@ export default class Speech {
 	// @todo Make sure that when an utterance starts, all other articles in the collection get their utterances paused.
 	// @todo Destroy method should stop utterance.
 
+	/**
+	 * Comnstruct.
+	 *
+	 * @param {Element} rootElement       - Element.
+	 * @param {Array}   defaultVoicePrefs - Ordered list of preferred voices.
+	 * @param {number}  defaultRate       - Default rate.
+	 * @param {number}  defaultPitch      - Default pitch.
+	 * @param {Object}  chunkifyOptions   - Chunkify options.
+	 */
 	constructor( {
 		rootElement,
 		defaultVoicePrefs = [], // @todo Combine this and the following two into Speech options.
@@ -22,27 +31,29 @@ export default class Speech {
 		this.chunkifyOptions = chunkifyOptions;
 		this.controlsElement = null;
 		this.controlButtons = {};
+		this.playNextTimeoutId = 0;
 
 		this.state = 'stopped'; // @todo This should emit events for collection to list to.
 		this.currentChunk = 0;
 		this.currentUtterance = null;
-
-		// Eliminate.
-		this.currentPosition = null;
-		this.currentTextNode = null;
-		this.currentOffset = null;
 
 		// @todo Translation strings.
 		// @todo Voice preferences?
 		// @todo Add mutationObserver for this element to call this.chunkify() again.
 	}
 
+	/**
+	 * Initialize.
+	 */
 	init() {
 		this.chunkify();
 		this.setupControls();
 		this.injectControls();
 	}
 
+	/**
+	 * Chunkify text nodes in content.
+	 */
 	chunkify() {
 		this.chunks = chunkify( Object.assign(
 			{},
@@ -51,6 +62,9 @@ export default class Speech {
 		) );
 	}
 
+	/**
+	 * Setup controls.
+	 */
 	setupControls() {
 		const container = document.createElement( 'fieldset' );
 
@@ -83,6 +97,14 @@ export default class Speech {
 		this.controlsElement = container;
 	}
 
+	/**
+	 * Create button.
+	 *
+	 * @todo Styles should not be inline; bookmarklet can load external stylesheet.
+	 * @param {string} icon  - Emoji icon.
+	 * @param {string} label - Label for button.
+	 * @returns {Element} Button.
+	 */
 	createButton( icon, label ) {
 		const button = document.createElement( 'button' );
 		button.type = 'button';
@@ -100,40 +122,6 @@ export default class Speech {
 	 */
 	injectControls() {
 		this.rootElement.insertBefore( this.controlsElement, this.rootElement.firstChild );
-	}
-
-	/**
-	 * Play content.
-	 *
-	 * @returns {void}
-	 */
-	play() {
-		if ( 'paused' === this.state ) {
-			this.resume();
-			return;
-		}
-		this.state = 'playing';
-
-		if ( this.currentChunk >= this.chunks.length ) {
-			this.currentChunk = 0;
-		}
-
-		const reject = () => {};
-
-		const speakNextChunk = () => {
-			// @todo Decide on the delay depending on what the chunk root is.
-
-			this.currentChunk += 1;
-
-			if ( this.currentChunk === this.chunks.length ) {
-				this.state = 'stopped';
-			} else {
-				this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
-			}
-		};
-		voices.load().then( () => {
-			this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
-		}, reject );
 	}
 
 	/**
@@ -158,7 +146,7 @@ export default class Speech {
 	 * Get voice for chunk.
 	 *
 	 * @param {Chunk} chunk - Speech chunk.
-	 * @return {Object|null} Voice.
+	 * @return {SpeechSynthesisVoice|null} Voice.
 	 */
 	getVoice( chunk ) {
 		const baseLanguage = chunk.language.replace( /-.*/, '' ).toLowerCase();
@@ -167,6 +155,11 @@ export default class Speech {
 			return null;
 		}
 		const languageVoices = localVoices.filter( ( voice ) => voice.lang.toLowerCase().startsWith( baseLanguage ) );
+		const defaultVoice = localVoices.find( ( voice ) => voice.default );
+		if ( defaultVoice && defaultVoice.lang.toLowerCase().startsWith( baseLanguage ) ) {
+			return defaultVoice;
+		}
+
 		const sameLanguageBaseVoices = [];
 		const identicalLanguageVoices = [];
 		for ( const voice of languageVoices ) {
@@ -197,7 +190,6 @@ export default class Speech {
 				reject();
 				return;
 			}
-			this.rejectSpeakChunk = reject;
 			const text = chunk.nodes.map( ( textNode ) => textNode.nodeValue ).join( '' );
 			const selection = window.getSelection();
 			const range = document.createRange();
@@ -226,6 +218,7 @@ export default class Speech {
 				const currentToken = event.currentTarget.text.substr( event.charIndex ).replace( /\W.*/, '' );
 				selection.removeAllRanges();
 
+				// Select the token if it contains a speakable character.
 				if ( /\w/.test( currentToken ) ) {
 					range.setStart( currentTextNode, startOffset );
 					range.setEnd( currentTextNode, Math.min( startOffset + currentToken.length, currentTextNode.length ) );
@@ -234,16 +227,61 @@ export default class Speech {
 			};
 
 			this.currentUtterance.onend = () => {
+				if ( 'stopped' === this.state ) {
+					reject();
+				} else {
+					resolve();
+				}
 				this.currentUtterance = null;
-				this.rejectSpeakChunk = null;
 				selection.removeAllRanges();
-				resolve();
 			};
 
 			speechSynthesis.speak( this.currentUtterance );
 		} );
 	}
 
+	/**
+	 * Play content.
+	 *
+	 * @returns {void}
+	 */
+	play() {
+		if ( 'paused' === this.state ) {
+			this.resume();
+			return;
+		}
+		this.state = 'playing';
+		this.controlsElement.style.position = 'sticky';
+		this.controlsElement.style.top = 0;
+
+		if ( this.currentChunk >= this.chunks.length ) {
+			this.currentChunk = 0;
+		}
+
+		const reject = () => {
+			this.stop();
+		};
+
+		const speakNextChunk = () => {
+			// @todo Decide on the delay depending on what the chunk root is.
+
+			// @todo Add setTimeout delay and store in playNextTimeoutId.
+			this.currentChunk += 1;
+
+			if ( this.currentChunk === this.chunks.length ) {
+				this.stop();
+			} else {
+				this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
+			}
+		};
+		voices.load().then( () => {
+			this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
+		}, reject );
+	}
+
+	/**
+	 * Pause utterance.
+	 */
 	pause() {
 		if ( this.currentUtterance ) {
 			this.state = 'paused';
@@ -251,44 +289,77 @@ export default class Speech {
 		}
 	}
 
-	previous() {
-		this.stop();
-		this.currentChunk = Math.max( this.currentChunk - 2, 0 ); // @todo Index diff verify.
-		this.play(); // @todo This night need to be done at nextTick.
-	}
-
-	next() {
-		this.stop();
-		this.currentChunk++;
-		if ( this.currentChunk >= this.chunks.length ) {
-			this.currentChunk = 0;
-		} else {
-			this.play(); // @todo This night need to be done at nextTick.
-		}
-	}
-
+	/**
+	 * Resume playing.
+	 */
 	resume() {
-		this.state = 'playing';
 		if ( this.currentUtterance ) {
+			this.state = 'playing';
 			speechSynthesis.resume();
 		}
 	}
 
-	stop() {
-		this.state = 'stopped';
-		if ( this.currentUtterance ) {
-			if ( this.rejectSpeakChunk ) {
-				this.rejectSpeakChunk();
-			}
+	/**
+	 * Stop playing and then play when it has stopped.
+	 *
+	 * This is needed to deal with some asynchronous issues with playing when another utterance is being spoken.
+	 */
+	stopThenPlay() {
+		if ( 'playing' === this.state ) {
+			const utterance = this.currentUtterance;
+			const playNext = () => {
+				utterance.removeEventListener( 'end', playNext );
+				this.play();
+			};
+			utterance.addEventListener( 'end', playNext );
+
+			// De-duplicate with stop() method.
+			this.state = 'stopped';
+			clearTimeout( this.playNextTimeoutId );
 			speechSynthesis.cancel();
-			this.currentUtterance = null;
+		} else {
+			this.play();
 		}
 	}
 
+	/**
+	 * Go to previous chunk and play.
+	 */
+	previous() {
+		this.currentChunk = Math.max( this.currentChunk - 1, 0 );
+		this.stopThenPlay();
+	}
+
+	/**
+	 * Go to next chunk and play, or just stop if at the end.
+	 */
+	next() {
+		this.currentChunk++;
+		if ( this.currentChunk >= this.chunks.length ) {
+			this.stop();
+		} else {
+			this.stopThenPlay();
+		}
+	}
+
+	/**
+	 * Stop speaking utterance.
+	 */
+	stop() {
+		this.state = 'stopped';
+		this.controlsElement.style.position = '';
+		if ( this.currentUtterance ) {
+			this.currentUtterance = null;
+			speechSynthesis.cancel();
+		}
+		clearTimeout( this.playNextTimeoutId );
+	}
+
+	/**
+	 * Destroy speech.
+	 */
 	destroy() {
 		// @todo Tear down mutation observer.
 		// @todo Stop uttterance.
 	}
-
-	// @todo Add playbackRate prop.
 }
