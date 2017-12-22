@@ -53,6 +53,11 @@ export function init( {
 		const uponReady = () => {
 			const speechRoots = findContentRoots( element, speechContentSelector );
 
+			// Probably a bug in Chrome that utterance is not canceled upon unload.
+			window.addEventListener( 'unload', () => {
+				speechSynthesis.cancel();
+			} );
+
 			for ( const speechRoot of speechRoots ) {
 				const speech = new Speech( {
 					rootElement: speechRoot,
@@ -62,6 +67,7 @@ export function init( {
 					defaultVoicePrefs,
 				} );
 				speeches.push( speech );
+				speech.init();
 			}
 
 			// @todo Add mutation observer to add new article roots dynamically.

@@ -2,6 +2,7 @@
 import chunkify from './chunkify';
 import * as voices from './voices';
 
+// @todo Rename to Controller?
 export default class Speech {
 	// @todo Have reference to current utterance.
 	// @todo Make sure that when an utterance starts, all other articles in the collection get their utterances paused.
@@ -9,7 +10,7 @@ export default class Speech {
 
 	constructor( {
 		rootElement,
-		defaultVoicePrefs = [],
+		defaultVoicePrefs = [], // @todo Combine this and the following two into Speech options.
 		defaultRate = 1.0,
 		defaultPitch = 1.0,
 		chunkifyOptions,
@@ -19,6 +20,8 @@ export default class Speech {
 		this.defaultRate = defaultRate;
 		this.defaultPitch = defaultPitch;
 		this.chunkifyOptions = chunkifyOptions;
+		this.controlsElement = null;
+		this.controlButtons = {};
 
 		this.state = 'stopped'; // @todo This should emit events for collection to list to.
 		this.currentChunk = 0;
@@ -29,16 +32,15 @@ export default class Speech {
 		this.currentTextNode = null;
 		this.currentOffset = null;
 
-		// Probably a bug in Chrome that utterance is not canceled upon unload.
-		window.addEventListener( 'unload', () => {
-			this.stop();
-		} );
-
-		this.chunkify();
-
 		// @todo Translation strings.
 		// @todo Voice preferences?
 		// @todo Add mutationObserver for this element to call this.chunkify() again.
+	}
+
+	init() {
+		this.chunkify();
+		this.setupControls();
+		this.injectControls();
 	}
 
 	chunkify() {
@@ -47,6 +49,57 @@ export default class Speech {
 			this.chunkifyOptions,
 			{ containerElement: this.rootElement }
 		) );
+	}
+
+	setupControls() {
+		const container = document.createElement( 'fieldset' );
+
+		const legend = document.createElement( 'legend' );
+		legend.appendChild( document.createTextNode( 'Speak' ) );
+
+		container.appendChild( legend );
+		this.controlButtons.play = this.createButton( '▶', 'Play' );
+		container.appendChild( this.controlButtons.play );
+
+		this.controlButtons.previous = this.createButton( '⏪', 'Previous' );
+		container.appendChild( this.controlButtons.previous );
+
+		this.controlButtons.pause = this.createButton( '⏸️', 'Pause' );
+		container.appendChild( this.controlButtons.pause );
+
+		this.controlButtons.resume = this.createButton( '⏯️', 'Resume' );
+		container.appendChild( this.controlButtons.resume );
+
+		this.controlButtons.next = this.createButton( '⏩', 'Next' );
+		container.appendChild( this.controlButtons.next );
+
+		this.controlButtons.stop = this.createButton( '⏹', 'Stop' );
+		container.appendChild( this.controlButtons.stop );
+
+		[ 'play', 'previous', 'pause', 'resume', 'next', 'stop' ].forEach( ( id ) => {
+			this.controlButtons[ id ].addEventListener( 'click', this[ id ].bind( this ) );
+		} );
+
+		this.controlsElement = container;
+	}
+
+	createButton( icon, label ) {
+		const button = document.createElement( 'button' );
+		button.type = 'button';
+		button.appendChild( document.createTextNode( icon ) );
+		button.setAttribute( 'aria-label', label );
+		button.style.fontFamily = '"Apple Color Emoji","Segoe UI Emoji","NotoColorEmoji","Segoe UI Symbol","Android Emoji","EmojiSymbols"';
+		button.style.background = 'none';
+		button.style.border = 'none';
+		button.style.cursor = 'pointer';
+		return button;
+	}
+
+	/**
+	 * Inject controls into content.
+	 */
+	injectControls() {
+		this.rootElement.insertBefore( this.controlsElement, this.rootElement.firstChild );
 	}
 
 	/**
