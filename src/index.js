@@ -1,7 +1,5 @@
 
-import chunkify from './chunkify';
 import Speech from './speech';
-import * as voices from './voices';
 
 /**
  *
@@ -11,7 +9,6 @@ import * as voices from './voices';
 export const speeches = [];
 
 // @todo Add WeakMap
-
 
 const CONTENT_SELECTOR = '.hentry .entry-content, .h-entry .e-content, [itemprop="articleBody"]';
 
@@ -62,7 +59,7 @@ export function init( {
 			for ( const speechRoot of speechRoots ) {
 				const speech = new Speech( {
 					rootElement: speechRoot,
-					chunkifyOptions
+					chunkifyOptions,
 				} );
 				speeches.push( speech );
 			}
@@ -71,13 +68,11 @@ export function init( {
 			resolve();
 		};
 
-		voices.load().then( () => {
-			if ( 'complete' === document.readyState || 'interactive' === document.readyState ) {
-				uponReady();
-			} else {
-				document.addEventListener( 'DOMContentLoaded', uponReady );
-			}
-		} );
+		if ( 'complete' === document.readyState || 'interactive' === document.readyState ) {
+			uponReady();
+		} else {
+			document.addEventListener( 'DOMContentLoaded', uponReady );
+		}
 	} );
 }
 
@@ -85,5 +80,3 @@ export function init( {
 // @todo Identify articles on DOM load and on Mutation Event.
 // @todo Add fieldset with controls for playback. After chunkify done.
 // @todo
-
-export { chunkify };

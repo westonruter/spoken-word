@@ -1,5 +1,6 @@
 
 import chunkify from './chunkify';
+import * as voices from "./voices";
 
 export default class Speech {
 
@@ -65,7 +66,7 @@ export default class Speech {
 			this.currentChunk = 0;
 		}
 
-		const reject = () => {}
+		const reject = () => {};
 
 		const speakNextChunk = () => {
 			// @todo Decide on the delay depending on what the chunk root is.
@@ -77,8 +78,10 @@ export default class Speech {
 			} else {
 				this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
 			}
-		}
-		this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
+		};
+		voices.load().then( () => {
+			this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
+		}, reject );
 	}
 
 	/**
@@ -97,9 +100,10 @@ export default class Speech {
 		const props = {
 			voice: defaultVoice,
 			pitch: this.defaultPitch,
-			rate: this.defaultRate
+			rate: this.defaultRate,
 		};
 
+		// @todo Break this into a separate method.
 		if ( chunk.language ) {
 			const chunkBaseLanguage = chunk.language.replace( /-.*/, '' );
 
