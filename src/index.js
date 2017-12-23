@@ -67,6 +67,8 @@ export function init( {
 					defaultVoicePrefs,
 				} );
 				speeches.push( speech );
+
+				// @todo speech.on( 'play', () => { /* STOP ALL OTHERS */ } );
 				speech.init();
 			}
 

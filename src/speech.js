@@ -9,7 +9,7 @@ export default class Speech {
 	// @todo Destroy method should stop utterance.
 
 	/**
-	 * Comnstruct.
+	 * Construct.
 	 *
 	 * @param {Element} rootElement       - Element.
 	 * @param {Array}   defaultVoicePrefs - Ordered list of preferred voices.
@@ -33,6 +33,7 @@ export default class Speech {
 		this.controlButtons = {};
 		this.playNextTimeoutId = 0;
 
+		// @todo Add event emitter.
 		this.state = 'stopped'; // @todo This should emit events for collection to list to.
 		this.currentChunk = 0;
 		this.currentUtterance = null;
@@ -70,8 +71,9 @@ export default class Speech {
 
 		const legend = document.createElement( 'legend' );
 		legend.appendChild( document.createTextNode( 'Speak' ) );
-
 		container.appendChild( legend );
+
+		// @todo The following buttons should not all be displayed and/or enabled at a time.
 		this.controlButtons.play = this.createButton( '▶', 'Play' );
 		container.appendChild( this.controlButtons.play );
 
@@ -128,7 +130,7 @@ export default class Speech {
 	 * Get voice.
 	 *
 	 * @todo Allow different voices for quotations and headings.
-	 * @param {Chunk} chunk      - Chunk
+	 * @param {Chunk} chunk - Chunk
 	 * @returns {Object} Props for voice, pitch, and rate.
 	 */
 	getUtteranceOptions( chunk ) {
@@ -138,6 +140,7 @@ export default class Speech {
 		};
 		if ( chunk.language ) {
 			props.voice = this.getVoice( chunk );
+			props.lang = chunk.language; // @todo This doesn't work at all in Safari.
 		}
 		return props;
 	}
@@ -195,6 +198,7 @@ export default class Speech {
 			const range = document.createRange();
 			let previousNodesOffset = 0;
 
+			// @todo Re-use same utterance once Firefox and Safari support changing SpeechSynthesisVoice.lang dynamically (or at all).
 			this.currentUtterance = new SpeechSynthesisUtterance( text );
 			Object.assign( this.currentUtterance, this.getUtteranceOptions( chunk ) );
 
@@ -250,6 +254,12 @@ export default class Speech {
 			this.resume();
 			return;
 		}
+
+		// Stop playing another TTS???
+		if ( speechSynthesis.speaking ) {
+			speechSynthesis.pause();
+		}
+
 		this.state = 'playing';
 		this.controlsElement.style.position = 'sticky';
 		this.controlsElement.style.top = 0;
@@ -313,7 +323,7 @@ export default class Speech {
 			};
 			utterance.addEventListener( 'end', playNext );
 
-			// De-duplicate with stop() method.
+			// @todo De-duplicate with stop() method.
 			this.state = 'stopped';
 			clearTimeout( this.playNextTimeoutId );
 			speechSynthesis.cancel();
