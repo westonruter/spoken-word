@@ -25,18 +25,20 @@ export default class Speech {
 		chunkifyOptions,
 	} ) {
 		this.rootElement = rootElement;
-		this.defaultVoicePrefs = defaultVoicePrefs;
-		this.defaultRate = defaultRate;
-		this.defaultPitch = defaultPitch;
 		this.chunkifyOptions = chunkifyOptions;
 		this.controlsElement = null;
 		this.controlButtons = {};
 		this.playNextTimeoutId = 0;
+		this.currentUtterance = null;
 
 		// @todo Add event emitter.
+		// @todo State could be an object that emits events; use Proxy? Include speaking, chunkIndex, and voice/pitch/rate props?
+		// @todo
 		this.state = 'stopped'; // @todo This should emit events for collection to list to.
-		this.currentChunk = 0;
-		this.currentUtterance = null;
+		this.currentChunk = 0; // @todo Needs to be observable too.
+		this.defaultVoicePrefs = defaultVoicePrefs;
+		this.defaultRate = defaultRate;
+		this.defaultPitch = defaultPitch;
 
 		// @todo Translation strings.
 		// @todo Voice preferences?
@@ -73,6 +75,7 @@ export default class Speech {
 		legend.appendChild( document.createTextNode( 'Speak' ) );
 		container.appendChild( legend );
 
+		// @todo The buttons need to by styled according to the current state.
 		// @todo The following buttons should not all be displayed and/or enabled at a time.
 		this.controlButtons.play = this.createButton( '▶', 'Play' );
 		container.appendChild( this.controlButtons.play );
@@ -180,6 +183,13 @@ export default class Speech {
 		return null;
 	}
 
+	getState() {
+		if ( ! this.currentUtterance ) {
+			return 'stopped';
+		}
+		return this.state; // @todo We can't use this.currentUtterance to get the state because it doesn't have state, and speechSynthesis doens't indicate the current utterance being spoken :-(
+	}
+
 	/**
 	 * Speak chunk.
 	 *
@@ -197,13 +207,21 @@ export default class Speech {
 			const selection = window.getSelection();
 			const range = document.createRange();
 			let previousNodesOffset = 0;
+			const nextNodes = [ ...chunk.nodes ];
+			let currentTextNode = nextNodes.shift();
 
 			// @todo Re-use same utterance once Firefox and Safari support changing SpeechSynthesisVoice.lang dynamically (or at all).
 			this.currentUtterance = new SpeechSynthesisUtterance( text );
 			Object.assign( this.currentUtterance, this.getUtteranceOptions( chunk ) );
 
-			const nextNodes = [ ...chunk.nodes ];
-			let currentTextNode = nextNodes.shift();
+			// this.currentUtterance.onpause = () => {
+			// 	this.state = 'paused';
+			// };
+			//
+			// this.currentUtterance.onresume = () => {
+			// 	this.state = 'playing';
+			// };
+
 			this.currentUtterance.onboundary = ( event ) => {
 				if ( 'word' !== event.name ) {
 					return;
@@ -231,7 +249,9 @@ export default class Speech {
 			};
 
 			this.currentUtterance.onend = () => {
-				if ( 'stopped' === this.state ) {
+				// @todo this.state = 'stopped';
+				// @todo This needs to reject if cancel() was called by someone else. Using this.state is not reliable enough.
+				if ( 'stopped' === this.state ) { // @todo Would the pending state work here? Or 0 === nextNodes.length?
 					reject();
 				} else {
 					resolve();
@@ -256,9 +276,9 @@ export default class Speech {
 		}
 
 		// Stop playing another TTS???
-		if ( speechSynthesis.speaking ) {
-			speechSynthesis.pause();
-		}
+		// if ( speechSynthesis.speaking ) {
+		// 	speechSynthesis.pause();
+		// }
 
 		this.state = 'playing';
 		this.controlsElement.style.position = 'sticky';
@@ -324,7 +344,7 @@ export default class Speech {
 			utterance.addEventListener( 'end', playNext );
 
 			// @todo De-duplicate with stop() method.
-			this.state = 'stopped';
+			this.state = 'stopped'; // @todo Prevent this?
 			clearTimeout( this.playNextTimeoutId );
 			speechSynthesis.cancel();
 		} else {
@@ -337,7 +357,7 @@ export default class Speech {
 	 */
 	previous() {
 		this.currentChunk = Math.max( this.currentChunk - 1, 0 );
-		this.stopThenPlay();
+		this.stopThenPlay(); // @todo Prevent flicker of sticky controls.
 	}
 
 	/**
@@ -348,7 +368,7 @@ export default class Speech {
 		if ( this.currentChunk >= this.chunks.length ) {
 			this.stop();
 		} else {
-			this.stopThenPlay();
+			this.stopThenPlay(); // @todo Prevent flicker of sticky controls.
 		}
 	}
 
