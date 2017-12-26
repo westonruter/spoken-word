@@ -364,6 +364,33 @@ export default class Speech {
 	}
 
 	/**
+	 * Get chunk index for the current selected range.
+	 *
+	 * @todo Return the offset as well so that speech can start at the selected point.
+	 * @todo Consider stopping playback when selectionchange happens.
+	 * @returns {number|null} Chunk index for current selection, or null if not selected.
+	 */
+	getSelectedRangeChunkIndex() {
+		const selection = window.getSelection();
+		if ( 1 !== selection.rangeCount ) {
+			return null;
+		}
+		const range = selection.getRangeAt( 0 );
+		if ( range.isCollapsed ) {
+			return null;
+		}
+		if ( range.startContainer.nodeType !== Node.TEXT_NODE ) {
+			return null;
+		}
+		for ( let i = 0; i < this.chunks.length; i++ ) {
+			if ( this.chunks[ i ].nodes.includes( range.startContainer ) ) {
+				return i;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Play content.
 	 *
 	 * @returns {void}
@@ -372,7 +399,11 @@ export default class Speech {
 		const props = {
 			playback: 'playing',
 		};
-		if ( this.state.chunk + 1 === this.chunks.length ) {
+
+		const selectedRangeChunkIndex = this.getSelectedRangeChunkIndex();
+		if ( null !== selectedRangeChunkIndex ) {
+			props.chunk = selectedRangeChunkIndex;
+		} else if ( this.state.chunk + 1 === this.chunks.length ) {
 			props.chunk = 0;
 		}
 		this.setState( props );
