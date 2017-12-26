@@ -35,8 +35,6 @@ export default class Speech {
 		this.controlButtons = {};
 		this.currentUtterance = null;
 
-		// @todo We can't use this.currentUtterance to get the state because it doesn't have state, and speechSynthesis doens't indicate the current utterance being spoken :-(
-		// @todo Emit events on this?
 		this.state = {
 			speakTimeoutId: 0,
 			playback: 'stopped',
@@ -46,9 +44,6 @@ export default class Speech {
 			pitch: 1.0,
 		};
 
-		// @todo Add event emitter.
-		// @todo State could be an object that emits events; use Proxy? Include speaking, chunkIndex, and voice/pitch/rate props?
-		// @todo
 		this.defaultVoicePrefs = defaultVoicePrefs;
 		this.defaultRate = defaultRate;
 		this.defaultPitch = defaultPitch;
@@ -122,6 +117,17 @@ export default class Speech {
 					} ),
 				} );
 			} else {
+
+				const selection = window.getSelection();
+				const range = document.createRange();
+				const chunk = this.chunks[ this.state.chunk ];
+				const firstNode = chunk.nodes[ 0 ];
+				const lastNode = chunk.nodes[ chunk.nodes.length - 1 ];
+				selection.removeAllRanges();
+				range.setStart( firstNode, 0 );
+				range.setEnd( lastNode, lastNode.length );
+				selection.addRange( range );
+
 				// @todo Highlight chunk?
 			}
 		} );
