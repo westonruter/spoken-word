@@ -10,7 +10,7 @@ import * as voices from './voices';
  * @typedef {object} Chunk
  * @property {Array}   nodes    - Text nodes.
  * @property {string}  language - Language for text nodes.
- * @property {Element} root     - Container element.
+ * @property {Element} root     - Container element, not necessarily the parent.
  */
 
 const HEADING_SELECTOR = 'h1, h2, h3, h4, h5, h6';
@@ -355,8 +355,10 @@ export default class Speech {
 					return;
 				}
 
-				const currentToken = event.currentTarget.text.substr( event.charIndex ).replace( /\W.*/, '' );
 				selection.removeAllRanges();
+
+				// Handle hyphenated words and words preceded by punctuation.
+				const currentToken = event.currentTarget.text.substr( event.charIndex ).replace( /(\W*\w+)\W.*/, '$1' );
 
 				// Select the token if it contains a speakable character.
 				if ( /\w/.test( currentToken ) ) {
