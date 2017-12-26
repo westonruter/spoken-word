@@ -2,6 +2,46 @@
 import chunkify from './chunkify';
 import * as voices from './voices';
 
+import EventEmitter from 'event-emitter';
+
+/**
+ *
+ * @param {Speech} instance - Speech instance.
+ */
+const playChunk = ( instance ) => {
+	const reject = ( reason ) => {
+		if ( 'playback_cancelled' === reason || 'playback_completed' === reason ) {
+			instance.setState( { playback: 'stopped' } );
+		}
+	};
+
+	const speakNextChunk = () => {
+		// @todo Decide on the delay depending on what the chunk root is.
+
+		if ( instance.state.chunk + 1 === instance.chunks.length ) {
+			reject( 'playback_completed' );
+			return;
+		}
+
+		const currentChunk = instance.state.chunk;
+		instance.setState( {
+			speakTimeoutId: setTimeout( () => {
+				instance.setState( {
+					chunk: currentChunk + 1,
+				} );
+			} ), // @todo Let delay be variable.
+		} );
+
+		// @todo Add setTimeout delay and store in playNextTimeoutId.
+		// Set the state after the inter-chunk timeout.
+
+		//instance.speakChunk( instance.state.chunk ).then( speakNextChunk, reject );
+	};
+	voices.load().then( () => {
+		instance.speakChunk( instance.state.chunk ).then( speakNextChunk, reject );
+	}, reject );
+};
+
 // @todo Rename to Controller?
 export default class Speech {
 	// @todo Have reference to current utterance.
@@ -28,14 +68,22 @@ export default class Speech {
 		this.chunkifyOptions = chunkifyOptions;
 		this.controlsElement = null;
 		this.controlButtons = {};
-		this.playNextTimeoutId = 0;
 		this.currentUtterance = null;
+
+		// @todo We can't use this.currentUtterance to get the state because it doesn't have state, and speechSynthesis doens't indicate the current utterance being spoken :-(
+		// @todo Emit events on this?
+		this.state = {
+			speakTimeoutId: 0,
+			playback: 'stopped',
+			chunk: 0,
+			voice: '',
+			rate: 1.0,
+			pitch: 1.0,
+		};
 
 		// @todo Add event emitter.
 		// @todo State could be an object that emits events; use Proxy? Include speaking, chunkIndex, and voice/pitch/rate props?
 		// @todo
-		this.state = 'stopped'; // @todo This should emit events for collection to list to.
-		this.currentChunk = 0; // @todo Needs to be observable too.
 		this.defaultVoicePrefs = defaultVoicePrefs;
 		this.defaultRate = defaultRate;
 		this.defaultPitch = defaultPitch;
@@ -46,12 +94,104 @@ export default class Speech {
 	}
 
 	/**
+	 * Set state.
+	 *
+	 * @param {Object} props - Props.
+	 */
+	setState( props ) {
+		const oldProps = this.state;
+		const newProps = Object.assign( {}, oldProps, props );
+		this.state = newProps;
+
+		for ( const key of Object.keys( props ) ) {
+			if ( newProps[ key ] === oldProps[ key ] ) {
+				continue;
+			}
+
+			if ( typeof newProps[ key ] === 'string' ) {
+				this.emit( 'change:' + key + ':' + newProps[ key ], oldProps[ key ] );
+			}
+			this.emit( 'change:' + key, newProps[ key ], oldProps[ key ] );
+		}
+		this.emit( 'change', newProps, oldProps );
+	}
+
+	/**
+	 * Set up state machine.
+	 */
+	setupStateMachine() {
+		this.on( 'change:playback:stopped', () => {
+			speechSynthesis.cancel();
+		} );
+		this.on( 'change:playback:paused', () => {
+			speechSynthesis.pause();
+		} );
+		this.on( 'change:playback:playing', ( previousState ) => {
+			if ( 'paused' === previousState ) {
+				speechSynthesis.resume();
+			} else {
+				playChunk( this );
+			}
+		} );
+
+		this.on( 'change:playback', ( newPlayback, oldPlayback ) => {
+			if ( 'playing' === oldPlayback ) {
+				clearTimeout( this.state.speakTimeoutId );
+			}
+		} );
+		this.on( 'change:speakTimeoutId', ( newTimeoutId, oldTimeoutId ) => {
+			clearTimeout( oldTimeoutId );
+		} );
+
+		this.on( 'change:chunk', () => {
+			// while( speechSynthesis.playing ) {
+			// 	speechSynthesis.cancel();
+			// }
+
+			if ( 'playing' === this.state.playback ) {
+
+				// Clear the queue so we can star speaking.
+				if ( speechSynthesis.speaking || speechSynthesis.pending ) {
+					speechSynthesis.cancel();
+				}
+
+				// Make sure speech synthesis has been completely stopped.
+				this.setState( {
+					speakTimeoutId: setTimeout( () => {
+						playChunk( this );
+					}, 10 ), // @todo Check if end?
+				} );
+
+				// const utterance = this.currentUtterance;
+				// if ( utterance && speechSynthesis.speaking ) {
+				// 	clearTimeout( this.state.speakTimeoutId );
+				//
+				// 	const playNext = () => {
+				// 		utterance.removeEventListener( 'end', playNext );
+				// 		play( this );
+				// 	};
+				// 	utterance.addEventListener( 'end', playNext );
+				//
+				// 	// @todo De-duplicate with stop() method.
+				// 	//clearTimeout( this.playNextTimeoutId ); // @todo What?
+				// 	speechSynthesis.cancel();
+				// } else {
+				// 	play( this );
+				// }
+			} else {
+				// @todo Highlight chunk?
+			}
+		} );
+	}
+
+	/**
 	 * Initialize.
 	 */
 	init() {
 		this.chunkify();
 		this.setupControls();
 		this.injectControls();
+		this.setupStateMachine();
 	}
 
 	/**
@@ -183,13 +323,6 @@ export default class Speech {
 		return null;
 	}
 
-	getState() {
-		if ( ! this.currentUtterance ) {
-			return 'stopped';
-		}
-		return this.state; // @todo We can't use this.currentUtterance to get the state because it doesn't have state, and speechSynthesis doens't indicate the current utterance being spoken :-(
-	}
-
 	/**
 	 * Speak chunk.
 	 *
@@ -203,6 +336,15 @@ export default class Speech {
 				reject();
 				return;
 			}
+
+			// const onChange = () => {
+			// 	this.off( 'change:playback', onChange );
+			// 	this.off( 'change:chunk', onChange );
+			// 	reject();
+			// };
+			// this.on( 'change:playback', onChange );
+			// this.on( 'change:chunk', onChange );
+
 			const text = chunk.nodes.map( ( textNode ) => textNode.nodeValue ).join( '' );
 			const selection = window.getSelection();
 			const range = document.createRange();
@@ -214,13 +356,9 @@ export default class Speech {
 			this.currentUtterance = new SpeechSynthesisUtterance( text );
 			Object.assign( this.currentUtterance, this.getUtteranceOptions( chunk ) );
 
-			// this.currentUtterance.onpause = () => {
-			// 	this.state = 'paused';
-			// };
-			//
-			// this.currentUtterance.onresume = () => {
-			// 	this.state = 'playing';
-			// };
+			// Make sure the app state matches the utterance state if it gets interacted with directly.
+			this.currentUtterance.onpause = () => this.setState( { playback: 'paused' } );
+			this.currentUtterance.onresume = () => this.setState( { playback: 'playing' } );
 
 			this.currentUtterance.onboundary = ( event ) => {
 				if ( 'word' !== event.name ) {
@@ -248,10 +386,39 @@ export default class Speech {
 				}
 			};
 
+			// @todo We need to have a listener like: this.on( 'change:playback:stopped', () => { speechSynthesis.cancel(); } ) -- this will allow end to resolve.
 			this.currentUtterance.onend = () => {
-				// @todo this.state = 'stopped';
+				// @todo this.state = 'stopped'?
 				// @todo This needs to reject if cancel() was called by someone else. Using this.state is not reliable enough.
-				if ( 'stopped' === this.state ) { // @todo Would the pending state work here? Or 0 === nextNodes.length?
+
+				this.currentUtterance = null;
+				selection.removeAllRanges();
+
+				if ( this.state.chunk !== chunkIndex ) {
+					reject( 'chunk_change' );
+					return;
+				}
+
+				if ( 'stopped' === this.state.playback ) {
+					reject( 'playback_stopped' );
+					return;
+				}
+
+				if ( 0 !== nextNodes.length ) {
+					reject( 'playback_cancelled' );
+					return;
+				}
+
+				resolve();
+				return;
+
+				// Reject if stop was due to playback being stopped or index being changed.
+				if ( chunkIndex !== this.state.chunk || 'stopped' === this.state.playback ) {
+					reject();
+					return;
+				}
+
+				if ( 'stopped' === this.state.playback ) { // @todo Would the pending state work here? Or 0 !== nextNodes.length?
 					reject();
 				} else {
 					resolve();
@@ -270,9 +437,11 @@ export default class Speech {
 	 * @returns {void}
 	 */
 	play() {
-		if ( 'paused' === this.state ) {
-			this.resume();
-			return;
+		const props = {
+			playback: 'playing',
+		};
+		if ( this.state.chunk + 1 === this.chunks.length ) {
+			props.chunk = 0;
 		}
 
 		// Stop playing another TTS???
@@ -280,53 +449,23 @@ export default class Speech {
 		// 	speechSynthesis.pause();
 		// }
 
-		this.state = 'playing';
-		this.controlsElement.style.position = 'sticky';
-		this.controlsElement.style.top = 0;
-
-		if ( this.currentChunk >= this.chunks.length ) {
-			this.currentChunk = 0;
-		}
-
-		const reject = () => {
-			this.stop();
-		};
-
-		const speakNextChunk = () => {
-			// @todo Decide on the delay depending on what the chunk root is.
-
-			// @todo Add setTimeout delay and store in playNextTimeoutId.
-			this.currentChunk += 1;
-
-			if ( this.currentChunk === this.chunks.length ) {
-				this.stop();
-			} else {
-				this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
-			}
-		};
-		voices.load().then( () => {
-			this.speakChunk( this.currentChunk ).then( speakNextChunk, reject );
-		}, reject );
+		this.setState( props );
+		// this.controlsElement.style.position = 'sticky';
+		// this.controlsElement.style.top = 0;
 	}
 
 	/**
 	 * Pause utterance.
 	 */
 	pause() {
-		if ( this.currentUtterance ) {
-			this.state = 'paused';
-			speechSynthesis.pause();
-		}
+		this.setState( { playback: 'paused' } );
 	}
 
 	/**
 	 * Resume playing.
 	 */
 	resume() {
-		if ( this.currentUtterance ) {
-			this.state = 'playing';
-			speechSynthesis.resume();
-		}
+		this.play();
 	}
 
 	/**
@@ -334,55 +473,60 @@ export default class Speech {
 	 *
 	 * This is needed to deal with some asynchronous issues with playing when another utterance is being spoken.
 	 */
-	stopThenPlay() {
-		if ( 'playing' === this.state ) {
-			const utterance = this.currentUtterance;
-			const playNext = () => {
-				utterance.removeEventListener( 'end', playNext );
-				this.play();
-			};
-			utterance.addEventListener( 'end', playNext );
-
-			// @todo De-duplicate with stop() method.
-			this.state = 'stopped'; // @todo Prevent this?
-			clearTimeout( this.playNextTimeoutId );
-			speechSynthesis.cancel();
-		} else {
-			this.play();
-		}
-	}
+	// stopThenPlay() {
+	// 	if ( 'playing' === this.state.playback ) {
+	// 		const utterance = this.currentUtterance;
+	// 		const playNext = () => {
+	// 			utterance.removeEventListener( 'end', playNext );
+	// 			this.play();
+	// 		};
+	// 		utterance.addEventListener( 'end', playNext );
+	//
+	// 		// @todo De-duplicate with stop() method.
+	// 		this.setState( { playback: 'stopped' } ); // @todo Prevent this?
+	// 		clearTimeout( this.playNextTimeoutId );
+	// 		speechSynthesis.cancel();
+	// 	} else {
+	// 		this.play();
+	// 	}
+	// }
 
 	/**
 	 * Go to previous chunk and play.
 	 */
 	previous() {
-		this.currentChunk = Math.max( this.currentChunk - 1, 0 );
-		this.stopThenPlay(); // @todo Prevent flicker of sticky controls.
+		this.setState( {
+			chunk: Math.max( this.state.chunk - 1, 0 ),
+		} );
+		//this.stopThenPlay(); // @todo Prevent flicker of sticky controls. @todo Remove this because state machine will handle.
 	}
 
 	/**
 	 * Go to next chunk and play, or just stop if at the end.
 	 */
 	next() {
-		this.currentChunk++;
-		if ( this.currentChunk >= this.chunks.length ) {
-			this.stop();
-		} else {
-			this.stopThenPlay(); // @todo Prevent flicker of sticky controls.
-		}
+		// @todo clearTimeout( this.state.speakTimeoutId ); ?
+		this.setState( {
+			chunk: Math.min( this.state.chunk + 1, this.chunks.length - 1 ),
+		} );
+		// if ( this.state.chunk >= this.chunks.length ) {
+		// 	this.stop();
+		// } else {
+		// 	this.stopThenPlay(); // @todo Prevent flicker of sticky controls.
+		// }
 	}
 
 	/**
 	 * Stop speaking utterance.
 	 */
 	stop() {
-		this.state = 'stopped';
-		this.controlsElement.style.position = '';
-		if ( this.currentUtterance ) {
-			this.currentUtterance = null;
-			speechSynthesis.cancel();
-		}
-		clearTimeout( this.playNextTimeoutId );
+		this.setState( { playback: 'stopped' } );
+		// this.controlsElement.style.position = '';
+		// if ( this.currentUtterance ) {
+		// 	this.currentUtterance = null;
+		// 	speechSynthesis.cancel();
+		// }
+		// clearTimeout( this.playNextTimeoutId );
 	}
 
 	/**
@@ -393,3 +537,5 @@ export default class Speech {
 		// @todo Stop uttterance.
 	}
 }
+
+EventEmitter( Speech.prototype );

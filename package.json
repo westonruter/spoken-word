@@ -27,5 +27,8 @@
     "eslint-config-wordpress": "^2.0.0",
     "source-map-loader": "^0.2.3",
     "webpack": "^3.10.0"
+  },
+  "dependencies": {
+    "fbemitter": "^2.1.1"
   }
 }

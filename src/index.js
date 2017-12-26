@@ -68,6 +68,15 @@ export function init( {
 				} );
 				speeches.push( speech );
 
+				// Stop playing all other speeches when playing one.
+				speech.on( 'change:playback:playing', () => {
+					for ( const otherSpeech of speeches ) {
+						if ( otherSpeech !== speech ) {
+							otherSpeech.stop(); // @todo Warning: This may end up stopping this from playing. We can start playback after 100ms.
+						}
+					}
+				} );
+
 				// @todo speech.on( 'play', () => { /* STOP ALL OTHERS */ } );
 				speech.init();
 			}
