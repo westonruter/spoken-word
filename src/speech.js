@@ -1,48 +1,13 @@
 
+import EventEmitter from 'event-emitter';
+
 import chunkify from './chunkify';
 import * as voices from './voices';
 
-import EventEmitter from 'event-emitter';
-
 /**
- *
- * @param {Speech} instance - Speech instance.
+ * @class Speech
+ * @augments EventEmitter
  */
-const playChunk = ( instance ) => {
-	const reject = ( reason ) => {
-		if ( 'playback_cancelled' === reason || 'playback_completed' === reason ) {
-			instance.setState( { playback: 'stopped' } );
-		}
-	};
-
-	const speakNextChunk = () => {
-		// @todo Decide on the delay depending on what the chunk root is.
-
-		if ( instance.state.chunk + 1 === instance.chunks.length ) {
-			reject( 'playback_completed' );
-			return;
-		}
-
-		const currentChunk = instance.state.chunk;
-		instance.setState( {
-			speakTimeoutId: setTimeout( () => {
-				instance.setState( {
-					chunk: currentChunk + 1,
-				} );
-			} ), // @todo Let delay be variable.
-		} );
-
-		// @todo Add setTimeout delay and store in playNextTimeoutId.
-		// Set the state after the inter-chunk timeout.
-
-		//instance.speakChunk( instance.state.chunk ).then( speakNextChunk, reject );
-	};
-	voices.load().then( () => {
-		instance.speakChunk( instance.state.chunk ).then( speakNextChunk, reject );
-	}, reject );
-};
-
-// @todo Rename to Controller?
 export default class Speech {
 	// @todo Have reference to current utterance.
 	// @todo Make sure that when an utterance starts, all other articles in the collection get their utterances paused.
@@ -130,7 +95,7 @@ export default class Speech {
 			if ( 'paused' === previousState ) {
 				speechSynthesis.resume();
 			} else {
-				playChunk( this );
+				this.startPlayingCurrentChunkAndQueueNext();
 			}
 		} );
 
@@ -144,12 +109,7 @@ export default class Speech {
 		} );
 
 		this.on( 'change:chunk', () => {
-			// while( speechSynthesis.playing ) {
-			// 	speechSynthesis.cancel();
-			// }
-
 			if ( 'playing' === this.state.playback ) {
-
 				// Clear the queue so we can star speaking.
 				if ( speechSynthesis.speaking || speechSynthesis.pending ) {
 					speechSynthesis.cancel();
@@ -158,26 +118,9 @@ export default class Speech {
 				// Make sure speech synthesis has been completely stopped.
 				this.setState( {
 					speakTimeoutId: setTimeout( () => {
-						playChunk( this );
-					}, 10 ), // @todo Check if end?
+						this.startPlayingCurrentChunkAndQueueNext();
+					} ),
 				} );
-
-				// const utterance = this.currentUtterance;
-				// if ( utterance && speechSynthesis.speaking ) {
-				// 	clearTimeout( this.state.speakTimeoutId );
-				//
-				// 	const playNext = () => {
-				// 		utterance.removeEventListener( 'end', playNext );
-				// 		play( this );
-				// 	};
-				// 	utterance.addEventListener( 'end', playNext );
-				//
-				// 	// @todo De-duplicate with stop() method.
-				// 	//clearTimeout( this.playNextTimeoutId ); // @todo What?
-				// 	speechSynthesis.cancel();
-				// } else {
-				// 	play( this );
-				// }
 			} else {
 				// @todo Highlight chunk?
 			}
@@ -237,6 +180,16 @@ export default class Speech {
 
 		[ 'play', 'previous', 'pause', 'resume', 'next', 'stop' ].forEach( ( id ) => {
 			this.controlButtons[ id ].addEventListener( 'click', this[ id ].bind( this ) );
+		} );
+
+		// Keep the controls in view when playing.
+		this.on( 'change:playback', ( value ) => {
+			if ( 'stopped' === value ) {
+				container.style.position = '';
+			} else {
+				container.style.position = 'sticky';
+				container.style.top = 0;
+			}
 		} );
 
 		this.controlsElement = container;
@@ -337,14 +290,6 @@ export default class Speech {
 				return;
 			}
 
-			// const onChange = () => {
-			// 	this.off( 'change:playback', onChange );
-			// 	this.off( 'change:chunk', onChange );
-			// 	reject();
-			// };
-			// this.on( 'change:playback', onChange );
-			// this.on( 'change:chunk', onChange );
-
 			const text = chunk.nodes.map( ( textNode ) => textNode.nodeValue ).join( '' );
 			const selection = window.getSelection();
 			const range = document.createRange();
@@ -386,11 +331,7 @@ export default class Speech {
 				}
 			};
 
-			// @todo We need to have a listener like: this.on( 'change:playback:stopped', () => { speechSynthesis.cancel(); } ) -- this will allow end to resolve.
 			this.currentUtterance.onend = () => {
-				// @todo this.state = 'stopped'?
-				// @todo This needs to reject if cancel() was called by someone else. Using this.state is not reliable enough.
-
 				this.currentUtterance = null;
 				selection.removeAllRanges();
 
@@ -405,26 +346,11 @@ export default class Speech {
 				}
 
 				if ( 0 !== nextNodes.length ) {
-					reject( 'playback_cancelled' );
+					reject( 'playback_interrupted' );
 					return;
 				}
 
 				resolve();
-				return;
-
-				// Reject if stop was due to playback being stopped or index being changed.
-				if ( chunkIndex !== this.state.chunk || 'stopped' === this.state.playback ) {
-					reject();
-					return;
-				}
-
-				if ( 'stopped' === this.state.playback ) { // @todo Would the pending state work here? Or 0 !== nextNodes.length?
-					reject();
-				} else {
-					resolve();
-				}
-				this.currentUtterance = null;
-				selection.removeAllRanges();
 			};
 
 			speechSynthesis.speak( this.currentUtterance );
@@ -443,15 +369,38 @@ export default class Speech {
 		if ( this.state.chunk + 1 === this.chunks.length ) {
 			props.chunk = 0;
 		}
-
-		// Stop playing another TTS???
-		// if ( speechSynthesis.speaking ) {
-		// 	speechSynthesis.pause();
-		// }
-
 		this.setState( props );
-		// this.controlsElement.style.position = 'sticky';
-		// this.controlsElement.style.top = 0;
+	}
+
+	/**
+	 * Start playing current chunk and queue playing the next.
+	 */
+	startPlayingCurrentChunkAndQueueNext() {
+		const reject = ( reason ) => {
+			if ( ! reason || 'playback_interrupted' === reason || 'playback_completed' === reason ) {
+				this.setState( { playback: 'stopped' } );
+			}
+		};
+
+		const queueNextChunk = () => {
+			if ( this.state.chunk + 1 === this.chunks.length ) {
+				reject( 'playback_completed' );
+				return;
+			}
+
+			const currentChunk = this.state.chunk;
+			this.setState( {
+				speakTimeoutId: setTimeout( () => {
+					this.setState( {
+						chunk: currentChunk + 1, // This state change will cause startPlayingCurrentChunkAndQueueNext to be called.
+					} );
+				} ), // @todo Let delay be variable depending on what the chunk root is.
+			} );
+		};
+
+		voices.load().then( () => {
+			this.speakChunk( this.state.chunk ).then( queueNextChunk, reject );
+		}, reject );
 	}
 
 	/**
@@ -469,51 +418,29 @@ export default class Speech {
 	}
 
 	/**
-	 * Stop playing and then play when it has stopped.
-	 *
-	 * This is needed to deal with some asynchronous issues with playing when another utterance is being spoken.
-	 */
-	// stopThenPlay() {
-	// 	if ( 'playing' === this.state.playback ) {
-	// 		const utterance = this.currentUtterance;
-	// 		const playNext = () => {
-	// 			utterance.removeEventListener( 'end', playNext );
-	// 			this.play();
-	// 		};
-	// 		utterance.addEventListener( 'end', playNext );
-	//
-	// 		// @todo De-duplicate with stop() method.
-	// 		this.setState( { playback: 'stopped' } ); // @todo Prevent this?
-	// 		clearTimeout( this.playNextTimeoutId );
-	// 		speechSynthesis.cancel();
-	// 	} else {
-	// 		this.play();
-	// 	}
-	// }
-
-	/**
 	 * Go to previous chunk and play.
 	 */
 	previous() {
-		this.setState( {
+		const props = {
 			chunk: Math.max( this.state.chunk - 1, 0 ),
-		} );
-		//this.stopThenPlay(); // @todo Prevent flicker of sticky controls. @todo Remove this because state machine will handle.
+		};
+		if ( 'paused' === this.state.playback ) {
+			props.playback = 'playing';
+		}
+		this.setState( props );
 	}
 
 	/**
 	 * Go to next chunk and play, or just stop if at the end.
 	 */
 	next() {
-		// @todo clearTimeout( this.state.speakTimeoutId ); ?
-		this.setState( {
+		const props = {
 			chunk: Math.min( this.state.chunk + 1, this.chunks.length - 1 ),
-		} );
-		// if ( this.state.chunk >= this.chunks.length ) {
-		// 	this.stop();
-		// } else {
-		// 	this.stopThenPlay(); // @todo Prevent flicker of sticky controls.
-		// }
+		};
+		if ( 'paused' === this.state.playback ) {
+			props.playback = 'playing';
+		}
+		this.setState( props );
 	}
 
 	/**
@@ -521,12 +448,6 @@ export default class Speech {
 	 */
 	stop() {
 		this.setState( { playback: 'stopped' } );
-		// this.controlsElement.style.position = '';
-		// if ( this.currentUtterance ) {
-		// 	this.currentUtterance = null;
-		// 	speechSynthesis.cancel();
-		// }
-		// clearTimeout( this.playNextTimeoutId );
 	}
 
 	/**

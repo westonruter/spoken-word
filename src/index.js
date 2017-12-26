@@ -77,7 +77,6 @@ export function init( {
 					}
 				} );
 
-				// @todo speech.on( 'play', () => { /* STOP ALL OTHERS */ } );
 				speech.init();
 			}
 
@@ -93,7 +92,4 @@ export function init( {
 	} );
 }
 
-// @todo Add collection for all articles. An article makes use of chunkify.
 // @todo Identify articles on DOM load and on Mutation Event.
-// @todo Add fieldset with controls for playback. After chunkify done.
-// @todo
