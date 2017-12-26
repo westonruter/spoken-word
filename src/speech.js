@@ -5,6 +5,22 @@ import chunkify from './chunkify';
 import * as voices from './voices';
 
 /**
+ * A segment of text nodes that are to be read by the TTS engine.
+ *
+ * @typedef {object} Chunk
+ * @property {Array}   nodes    - Text nodes.
+ * @property {string}  language - Language for text nodes.
+ * @property {Element} root     - Container element.
+ */
+
+const HEADING_SELECTOR = 'h1, h2, h3, h4, h5, h6';
+const PARAGRAPH_PAUSE_SELECTOR = 'blockquote, p, dt';
+const DEFAULT_PAUSE_DURATIONS = {
+	heading: 1000,
+	paragraph: 500,
+};
+
+/**
  * @class Speech
  * @augments EventEmitter
  */
@@ -16,11 +32,13 @@ export default class Speech {
 	/**
 	 * Construct.
 	 *
-	 * @param {Element} rootElement       - Element.
-	 * @param {Array}   defaultVoicePrefs - Ordered list of preferred voices.
-	 * @param {number}  defaultRate       - Default rate.
-	 * @param {number}  defaultPitch      - Default pitch.
-	 * @param {Object}  chunkifyOptions   - Chunkify options.
+	 * @param {Object}  args                   - Args.
+	 * @param {Element} args.rootElement       - Element.
+	 * @param {Array}   args.defaultVoicePrefs - Ordered list of preferred voices.
+	 * @param {number}  args.defaultRate       - Default rate.
+	 * @param {number}  args.defaultPitch      - Default pitch.
+	 * @param {Object}  args.chunkifyOptions   - Chunkify options.
+	 * @param {Object}  args.pauseDurations    - Pause durations.
 	 */
 	constructor( {
 		rootElement,
@@ -28,6 +46,7 @@ export default class Speech {
 		defaultRate = 1.0,
 		defaultPitch = 1.0,
 		chunkifyOptions,
+		pauseDurations = DEFAULT_PAUSE_DURATIONS,
 	} ) {
 		this.rootElement = rootElement;
 		this.chunkifyOptions = chunkifyOptions;
@@ -44,6 +63,7 @@ export default class Speech {
 			pitch: 1.0,
 		};
 
+		this.pauseDurations = pauseDurations;
 		this.defaultVoicePrefs = defaultVoicePrefs;
 		this.defaultRate = defaultRate;
 		this.defaultPitch = defaultPitch;
@@ -117,7 +137,7 @@ export default class Speech {
 					} ),
 				} );
 			} else {
-
+				// Select the entire chunk instead of speaking it.
 				const selection = window.getSelection();
 				const range = document.createRange();
 				const chunk = this.chunks[ this.state.chunk ];
@@ -127,8 +147,6 @@ export default class Speech {
 				range.setStart( firstNode, 0 );
 				range.setEnd( lastNode, lastNode.length );
 				selection.addRange( range );
-
-				// @todo Highlight chunk?
 			}
 		} );
 	}
@@ -183,6 +201,17 @@ export default class Speech {
 
 		this.controlButtons.stop = this.createButton( '⏹', 'Stop' );
 		container.appendChild( this.controlButtons.stop );
+
+		// @todo Should this be a dialog?
+		this.controlButtons.settings = this.createButton( '⚙️', 'Settings' );
+		container.appendChild( this.controlButtons.settings );
+		const dialog = document.createElement( 'dialog' );
+		dialog.innerHTML = '<p>Hello world!</p>';
+		container.appendChild( dialog );
+		this.controlButtons.settings.addEventListener( 'click', () => {
+			// @todo Lazy-load dialogPolyfill.
+			dialog.showModal();
+		} );
 
 		[ 'play', 'previous', 'pause', 'resume', 'next', 'stop' ].forEach( ( id ) => {
 			this.controlButtons[ id ].addEventListener( 'click', this[ id ].bind( this ) );
@@ -410,6 +439,24 @@ export default class Speech {
 	}
 
 	/**
+	 * Get inter-chunk reading pause.
+	 *
+	 * @param {Chunk} thisChunk - Current chunk.
+	 * @param {Chunk} nextChunk - Next chunk.
+	 * @return {number} Milliseconds to pause between speaking chunks.
+	 */
+	getInterChunkPause( thisChunk, nextChunk ) {
+		if ( thisChunk.root !== nextChunk.root ) {
+			if ( thisChunk.root.matches( HEADING_SELECTOR ) || nextChunk.root.matches( HEADING_SELECTOR ) ) {
+				return this.pauseDurations.heading; // @todo Let the heading level also very the pause?
+			} else if ( thisChunk.root.matches( PARAGRAPH_PAUSE_SELECTOR ) || nextChunk.root.matches( PARAGRAPH_PAUSE_SELECTOR ) ) {
+				return this.pauseDurations.paragraph;
+			}
+		}
+		return 0;
+	}
+
+	/**
 	 * Start playing current chunk and queue playing the next.
 	 */
 	startPlayingCurrentChunkAndQueueNext() {
@@ -425,13 +472,16 @@ export default class Speech {
 				return;
 			}
 
+			const thisChunk = this.chunks[ this.state.chunk ];
+			const nextChunk = this.chunks[ this.state.chunk + 1 ];
+			const pauseDuration = this.getInterChunkPause( thisChunk, nextChunk );
 			const currentChunk = this.state.chunk;
 			this.setState( {
 				speakTimeoutId: setTimeout( () => {
 					this.setState( {
 						chunk: currentChunk + 1, // This state change will cause startPlayingCurrentChunkAndQueueNext to be called.
 					} );
-				} ), // @todo Let delay be variable depending on what the chunk root is.
+				}, pauseDuration * this.state.rate ),
 			} );
 		};
 
