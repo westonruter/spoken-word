@@ -19,6 +19,7 @@ const DEFAULT_PAUSE_DURATIONS = {
 	heading: 1000,
 	paragraph: 500,
 };
+const CHUNK_BEGINNING_OFFSET_THRESHOLD = 10;
 
 /**
  * @class Speech
@@ -110,7 +111,7 @@ export default class Speech {
 		this.on( 'change:playback:stopped', () => {
 			speechSynthesis.cancel();
 		} );
-		this.on( 'change:playback:playing', ( previousState ) => {
+		this.on( 'change:playback:playing', () => {
 			this.startPlayingCurrentChunkAndQueueNext();
 		} );
 
@@ -188,7 +189,6 @@ export default class Speech {
 
 		this.controlButtons.next = this.createButton( '⏩', 'Next' );
 		container.appendChild( this.controlButtons.next );
-
 
 		// @todo Should this be a dialog?
 		this.controlButtons.settings = this.createButton( '⚙️', 'Settings' );
@@ -339,14 +339,17 @@ export default class Speech {
 			this.currentUtterance.onpause = () => this.setState( { playback: 'stopped' } );
 
 			let previousSpokenNodesLength = 0;
+			let currentChunkRangeOffset = this.state.chunkRangeOffset;
+
 			this.currentUtterance.onboundary = ( event ) => {
 				if ( 'word' !== event.name ) {
 					return;
 				}
 
 				// Keep track of the last word that was spoken.
+				currentChunkRangeOffset = initialSkippedNodesLength + firstNodeOffset + event.charIndex;
 				this.setState(
-					{ chunkRangeOffset: initialSkippedNodesLength + firstNodeOffset + event.charIndex },
+					{ chunkRangeOffset: currentChunkRangeOffset },
 					{ suppressEvents: true }
 				);
 
@@ -379,7 +382,7 @@ export default class Speech {
 					return;
 				}
 
-				if ( 0 === this.state.chunkRangeOffset ) {
+				if ( currentChunkRangeOffset !== this.state.chunkRangeOffset ) {
 					reject( 'chunk_change' );
 					return;
 				}
@@ -519,11 +522,15 @@ export default class Speech {
 	 * Go to previous chunk and play.
 	 */
 	previous() {
-		// @todo This needs to first only set chunkRangeOffset but then if previous gets called again and the chunkRangeOffset is small enough, or this was called under a second ago, then decrease chunkIndex as well.
 		const props = {
-			chunkIndex: Math.max( this.state.chunkIndex - 1, 0 ),
 			chunkRangeOffset: 0,
 		};
+
+		// Only move to previous chunk if already at beginning of this chunk.
+		if ( this.state.chunkRangeOffset < CHUNK_BEGINNING_OFFSET_THRESHOLD ) {
+			props.chunkIndex = Math.max( this.state.chunkIndex - 1, 0 );
+		}
+
 		this.setState( props );
 	}
 
