@@ -77,7 +77,7 @@ export function init( {
 					}
 				} );
 
-				speech.init();
+				speech.initialize();
 			}
 
 			// @todo Add mutation observer to add new article roots dynamically.

@@ -56,6 +56,7 @@ export default class Speech {
 		this.currentUtterance = null;
 
 		this.state = {
+			containsSelection: false,
 			speakTimeoutId: 0,
 			playback: 'stopped',
 			chunkIndex: 0, // Which chunk is playing.
@@ -72,7 +73,35 @@ export default class Speech {
 
 		// @todo Translation strings.
 		// @todo Voice preferences?
+	}
+
+	/**
+	 * Initialize.
+	 */
+	initialize() {
+		this.chunkify();
+		this.setupControls();
+		this.injectControls();
+		this.setupStateMachine();
+
+		// @todo Why is
+		// @todo Also if focus removed from container?
+		document.addEventListener( 'selectstart', () => {
+			setTimeout( () => { // @todo Is there a better way to do this? A selectend?
+				const selection = window.getSelection();
+				if ( 0 === selection.rangeCount ) {
+					this.setState( { containsSelection: false } );
+				} else {
+					const range = selection.getRangeAt( 0 );
+					this.setState( {
+						containsSelection: this.rootElement.contains( range.startContainer ) || this.rootElement.contains( range.endContainer ),
+					} );
+				}
+			} );
+		} );
+
 		// @todo Add mutationObserver for this element to call this.chunkify() again.
+		// @todo Add mutation observer to destroy once this.rootElement is removed.
 	}
 
 	/**
@@ -138,21 +167,12 @@ export default class Speech {
 				range.setStart( firstNode, 0 );
 				range.setEnd( lastNode, lastNode.length );
 				selection.addRange( range );
+				this.setState( { containsSelection: true } );
 			}
 		};
 
 		this.on( 'change:chunkIndex', handleChunkChange );
 		this.on( 'change:chunkRangeOffset', handleChunkChange );
-	}
-
-	/**
-	 * Initialize.
-	 */
-	init() {
-		this.chunkify();
-		this.setupControls();
-		this.injectControls();
-		this.setupStateMachine();
 	}
 
 	/**
@@ -206,12 +226,12 @@ export default class Speech {
 		} );
 
 		// Keep the controls in view when playing.
-		this.on( 'change:playback', ( value ) => {
-			if ( 'stopped' === value ) {
-				container.style.position = '';
-			} else {
+		this.on( 'change:containsSelection', ( contains ) => {
+			if ( contains ) {
 				container.style.position = 'sticky';
 				container.style.top = 0;
+			} else {
+				container.style.position = '';
 			}
 		} );
 
@@ -370,6 +390,7 @@ export default class Speech {
 					range.setStart( currentTextNode, startOffset );
 					range.setEnd( currentTextNode, Math.min( startOffset + currentToken.length, currentTextNode.length ) );
 					selection.addRange( range );
+					this.setState( { containsSelection: true } );
 				}
 			};
 
@@ -477,6 +498,8 @@ export default class Speech {
 	 * Start playing current chunk and queue playing the next.
 	 */
 	startPlayingCurrentChunkAndQueueNext() {
+		clearTimeout( this.state.speakTimeoutId );
+
 		const reject = ( reason ) => {
 			if ( ! reason || 'playback_interrupted' === reason || 'playback_completed' === reason ) {
 				this.setState( { playback: 'stopped' } );
@@ -508,7 +531,7 @@ export default class Speech {
 			} );
 		};
 
-		// Make sure voices are loaded and speech synthesis has been completely stopped (since cancel is async).
+		// Make sure voices are loaded and speech synthesis has been completely stopped (since cancel is apparently async).
 		voices.load().then( () => {
 			this.setState( {
 				speakTimeoutId: setTimeout( () => {
