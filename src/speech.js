@@ -110,15 +110,8 @@ export default class Speech {
 		this.on( 'change:playback:stopped', () => {
 			speechSynthesis.cancel();
 		} );
-		this.on( 'change:playback:paused', () => {
-			speechSynthesis.pause();
-		} );
 		this.on( 'change:playback:playing', ( previousState ) => {
-			if ( 'paused' === previousState ) {
-				speechSynthesis.resume();
-			} else {
-				this.startPlayingCurrentChunkAndQueueNext();
-			}
+			this.startPlayingCurrentChunkAndQueueNext();
 		} );
 
 		this.on( 'change:playback', ( newPlayback, oldPlayback ) => {
@@ -192,12 +185,6 @@ export default class Speech {
 
 		this.controlButtons.previous = this.createButton( '⏪', 'Previous' );
 		container.appendChild( this.controlButtons.previous );
-
-		// this.controlButtons.pause = this.createButton( '⏸️', 'Pause' );
-		// container.appendChild( this.controlButtons.pause );
-
-		// this.controlButtons.resume = this.createButton( '⏯️', 'Resume' );
-		// container.appendChild( this.controlButtons.resume );
 
 		this.controlButtons.next = this.createButton( '⏩', 'Next' );
 		container.appendChild( this.controlButtons.next );
@@ -349,8 +336,7 @@ export default class Speech {
 			Object.assign( this.currentUtterance, this.getUtteranceOptions( chunk ) );
 
 			// Make sure the app state matches the utterance state if it gets interacted with directly.
-			this.currentUtterance.onpause = () => this.setState( { playback: 'paused' } );
-			this.currentUtterance.onresume = () => this.setState( { playback: 'playing' } );
+			this.currentUtterance.onpause = () => this.setState( { playback: 'stopped' } );
 
 			let previousSpokenNodesLength = 0;
 			this.currentUtterance.onboundary = ( event ) => {
@@ -525,20 +511,6 @@ export default class Speech {
 	}
 
 	/**
-	 * Pause utterance.
-	 */
-	pause() {
-		this.setState( { playback: 'paused' } );
-	}
-
-	/**
-	 * Resume playing.
-	 */
-	resume() {
-		this.play();
-	}
-
-	/**
 	 * Go to previous chunk and play.
 	 */
 	previous() {
@@ -547,9 +519,6 @@ export default class Speech {
 			chunkIndex: Math.max( this.state.chunkIndex - 1, 0 ),
 			chunkRangeOffset: 0,
 		};
-		if ( 'paused' === this.state.playback ) {
-			props.playback = 'playing';
-		}
 		this.setState( props );
 	}
 
@@ -561,9 +530,6 @@ export default class Speech {
 			chunkIndex: Math.min( this.state.chunkIndex + 1, this.chunks.length - 1 ),
 			chunkRangeOffset: 0,
 		};
-		if ( 'paused' === this.state.playback ) {
-			props.playback = 'playing';
-		}
 		this.setState( props );
 	}
 
