@@ -379,6 +379,11 @@ export default class Speech {
 					return;
 				}
 
+				if ( 0 === this.state.chunkRangeOffset ) {
+					reject( 'chunk_change' );
+					return;
+				}
+
 				if ( 'stopped' === this.state.playback ) {
 					reject( 'playback_stopped' );
 					return;
@@ -526,8 +531,12 @@ export default class Speech {
 	 * Go to next chunk and play, or just stop if at the end.
 	 */
 	next() {
+		if ( this.state.chunkIndex + 1 === this.chunks.length ) {
+			return;
+		}
+
 		const props = {
-			chunkIndex: Math.min( this.state.chunkIndex + 1, this.chunks.length - 1 ),
+			chunkIndex: this.state.chunkIndex + 1,
 			chunkRangeOffset: 0,
 		};
 		this.setState( props );
