@@ -57,8 +57,9 @@ export default class Speech {
 		this.state = {
 			speakTimeoutId: 0,
 			playback: 'stopped',
-			chunk: 0,
-			voice: '',
+			chunkIndex: 0, // Which chunk is playing.
+			chunkRangeOffset: 0, // Which character inside the chunk's nodes was last spoken.
+			voice: '', // @todo
 			rate: 1.0,
 			pitch: 1.0,
 		};
@@ -76,9 +77,11 @@ export default class Speech {
 	/**
 	 * Set state.
 	 *
-	 * @param {Object} props - Props.
+	 * @param {Object}  props - Props.
+	 * @param {Object}  options - Options.
+	 * @param {boolean} options.suppressEvents - Whether to suppress change event.
 	 */
-	setState( props ) {
+	setState( props, { suppressEvents = false } = {} ) {
 		const oldProps = this.state;
 		const newProps = Object.assign( {}, oldProps, props );
 		this.state = newProps;
@@ -88,12 +91,16 @@ export default class Speech {
 				continue;
 			}
 
-			if ( typeof newProps[ key ] === 'string' ) {
-				this.emit( 'change:' + key + ':' + newProps[ key ], oldProps[ key ] );
+			if ( ! suppressEvents ) {
+				if ( typeof newProps[ key ] === 'string' ) {
+					this.emit( 'change:' + key + ':' + newProps[ key ], oldProps[ key ] );
+				}
+				this.emit( 'change:' + key, newProps[ key ], oldProps[ key ] );
 			}
-			this.emit( 'change:' + key, newProps[ key ], oldProps[ key ] );
 		}
-		this.emit( 'change', newProps, oldProps );
+		if ( ! suppressEvents ) {
+			this.emit( 'change', newProps, oldProps );
+		}
 	}
 
 	/**
@@ -123,24 +130,14 @@ export default class Speech {
 			clearTimeout( oldTimeoutId );
 		} );
 
-		this.on( 'change:chunk', () => {
+		const handleChunkChange = () => {
 			if ( 'playing' === this.state.playback ) {
-				// Clear the queue so we can star speaking.
-				if ( speechSynthesis.speaking || speechSynthesis.pending ) {
-					speechSynthesis.cancel();
-				}
-
-				// Make sure speech synthesis has been completely stopped.
-				this.setState( {
-					speakTimeoutId: setTimeout( () => {
-						this.startPlayingCurrentChunkAndQueueNext();
-					} ),
-				} );
+				this.startPlayingCurrentChunkAndQueueNext();
 			} else {
 				// Select the entire chunk instead of speaking it.
 				const selection = window.getSelection();
 				const range = document.createRange();
-				const chunk = this.chunks[ this.state.chunk ];
+				const chunk = this.chunks[ this.state.chunkIndex ];
 				const firstNode = chunk.nodes[ 0 ];
 				const lastNode = chunk.nodes[ chunk.nodes.length - 1 ];
 				selection.removeAllRanges();
@@ -148,7 +145,10 @@ export default class Speech {
 				range.setEnd( lastNode, lastNode.length );
 				selection.addRange( range );
 			}
-		} );
+		};
+
+		this.on( 'change:chunkIndex', handleChunkChange );
+		this.on( 'change:chunkRangeOffset', handleChunkChange );
 	}
 
 	/**
@@ -187,20 +187,21 @@ export default class Speech {
 		this.controlButtons.play = this.createButton( '▶', 'Play' );
 		container.appendChild( this.controlButtons.play );
 
+		this.controlButtons.stop = this.createButton( '⏹', 'Stop' );
+		container.appendChild( this.controlButtons.stop );
+
 		this.controlButtons.previous = this.createButton( '⏪', 'Previous' );
 		container.appendChild( this.controlButtons.previous );
 
-		this.controlButtons.pause = this.createButton( '⏸️', 'Pause' );
-		container.appendChild( this.controlButtons.pause );
+		// this.controlButtons.pause = this.createButton( '⏸️', 'Pause' );
+		// container.appendChild( this.controlButtons.pause );
 
-		this.controlButtons.resume = this.createButton( '⏯️', 'Resume' );
-		container.appendChild( this.controlButtons.resume );
+		// this.controlButtons.resume = this.createButton( '⏯️', 'Resume' );
+		// container.appendChild( this.controlButtons.resume );
 
 		this.controlButtons.next = this.createButton( '⏩', 'Next' );
 		container.appendChild( this.controlButtons.next );
 
-		this.controlButtons.stop = this.createButton( '⏹', 'Stop' );
-		container.appendChild( this.controlButtons.stop );
 
 		// @todo Should this be a dialog?
 		this.controlButtons.settings = this.createButton( '⚙️', 'Settings' );
@@ -213,7 +214,7 @@ export default class Speech {
 			dialog.showModal();
 		} );
 
-		[ 'play', 'previous', 'pause', 'resume', 'next', 'stop' ].forEach( ( id ) => {
+		[ 'play', 'previous', 'next', 'stop' ].forEach( ( id ) => {
 			this.controlButtons[ id ].addEventListener( 'click', this[ id ].bind( this ) );
 		} );
 
@@ -314,10 +315,10 @@ export default class Speech {
 	/**
 	 * Speak chunk.
 	 *
-	 * @param {number} chunkIndex - Chunk index.
 	 * @returns {Promise} Resolves when completed.
 	 */
-	speakChunk( chunkIndex ) {
+	speakChunk() {
+		const chunkIndex = this.state.chunkIndex;
 		return new Promise( ( resolve, reject ) => {
 			const chunk = this.chunks[ chunkIndex ];
 			if ( ! chunk ) {
@@ -325,14 +326,25 @@ export default class Speech {
 				return;
 			}
 
-			const text = chunk.nodes.map( ( textNode ) => textNode.nodeValue ).join( '' );
 			const selection = window.getSelection();
 			const range = document.createRange();
-			let previousNodesOffset = 0;
-			const nextNodes = [ ...chunk.nodes ];
-			let currentTextNode = nextNodes.shift();
 
-			// @todo Re-use same utterance once Firefox and Safari support changing SpeechSynthesisVoice.lang dynamically (or at all).
+			// Obtain the text nodes to read, skipping every chunk node that is completely read and calculating the skip distance.
+			let initialSkippedNodesLength = 0;
+			const nextNodes = [ ...chunk.nodes ];
+			while ( nextNodes[ 0 ] && initialSkippedNodesLength + nextNodes[ 0 ].length < this.state.chunkRangeOffset ) {
+				initialSkippedNodesLength += nextNodes.shift().length;
+			}
+
+			// Obtain the text to read.
+			const firstNodeOffset = this.state.chunkRangeOffset - initialSkippedNodesLength;
+			let currentTextNode = nextNodes.shift();
+			const text = [
+				currentTextNode.nodeValue.substr( firstNodeOffset ),
+			].concat(
+				nextNodes.map( ( textNode ) => textNode.nodeValue )
+			).join( '' );
+
 			this.currentUtterance = new SpeechSynthesisUtterance( text );
 			Object.assign( this.currentUtterance, this.getUtteranceOptions( chunk ) );
 
@@ -340,26 +352,30 @@ export default class Speech {
 			this.currentUtterance.onpause = () => this.setState( { playback: 'paused' } );
 			this.currentUtterance.onresume = () => this.setState( { playback: 'playing' } );
 
+			let previousSpokenNodesLength = 0;
 			this.currentUtterance.onboundary = ( event ) => {
 				if ( 'word' !== event.name ) {
 					return;
 				}
-				if ( event.charIndex >= previousNodesOffset + currentTextNode.length ) {
-					previousNodesOffset += currentTextNode.length;
-					currentTextNode = nextNodes.shift();
-				}
-				const startOffset = event.charIndex - previousNodesOffset;
 
-				// Handle case when resuming (sometimes).
-				if ( startOffset < 0 ) {
-					return;
+				// Keep track of the last word that was spoken.
+				this.setState(
+					{ chunkRangeOffset: initialSkippedNodesLength + firstNodeOffset + event.charIndex },
+					{ suppressEvents: true }
+				);
+
+				while ( nextNodes.length && event.charIndex + firstNodeOffset >= previousSpokenNodesLength + currentTextNode.length ) {
+					previousSpokenNodesLength += currentTextNode.length;
+					currentTextNode = nextNodes.shift();
 				}
 
 				selection.removeAllRanges();
 
 				// Handle hyphenated words and words preceded by punctuation.
-				const currentToken = event.currentTarget.text.substr( event.charIndex ).replace( /(\W*\w+)\W.*/, '$1' );
+				const startOffset = event.charIndex - previousSpokenNodesLength + firstNodeOffset;
+				const currentToken = event.currentTarget.text.substr( event.charIndex ).replace( /(\W*\w+)\W.*/, '$1' ); // @todo ñ not matching?
 
+				// @todo The token may span text nodes! If currentToken.length > currentTextNode.length then we have to start looping over nextNodes until we have enough nodes to select.
 				// Select the token if it contains a speakable character.
 				if ( /\w/.test( currentToken ) ) {
 					range.setStart( currentTextNode, startOffset );
@@ -372,7 +388,7 @@ export default class Speech {
 				this.currentUtterance = null;
 				selection.removeAllRanges();
 
-				if ( this.state.chunk !== chunkIndex ) {
+				if ( this.state.chunkIndex !== chunkIndex ) {
 					reject( 'chunk_change' );
 					return;
 				}
@@ -397,25 +413,29 @@ export default class Speech {
 	/**
 	 * Get chunk index for the current selected range.
 	 *
-	 * @todo Return the offset as well so that speech can start at the selected point.
 	 * @todo Consider stopping playback when selectionchange happens.
-	 * @returns {number|null} Chunk index for current selection, or null if not selected.
+	 * @returns {Object|null} Chunk index and char offset for current selection, or null if not selected.
 	 */
-	getSelectedRangeChunkIndex() {
+	getSelectedRangeChunkIndexWithCharOffset() {
 		const selection = window.getSelection();
 		if ( 1 !== selection.rangeCount ) {
 			return null;
 		}
 		const range = selection.getRangeAt( 0 );
-		if ( range.isCollapsed ) {
+		if ( range.isCollapsed ) { // @todo && 'playing' !== this.state.playback?
 			return null;
 		}
 		if ( range.startContainer.nodeType !== Node.TEXT_NODE ) {
 			return null;
 		}
-		for ( let i = 0; i < this.chunks.length; i++ ) {
-			if ( this.chunks[ i ].nodes.includes( range.startContainer ) ) {
-				return i;
+		for ( let chunkIndex = 0; chunkIndex < this.chunks.length; chunkIndex++ ) {
+			let chunkRangeOffset = 0;
+			for ( const node of this.chunks[ chunkIndex ].nodes ) {
+				if ( range.startContainer === node ) {
+					chunkRangeOffset += range.startOffset;
+					return { chunkIndex, chunkRangeOffset };
+				}
+				chunkRangeOffset += node.length;
 			}
 		}
 		return null;
@@ -431,11 +451,12 @@ export default class Speech {
 			playback: 'playing',
 		};
 
-		const selectedRangeChunkIndex = this.getSelectedRangeChunkIndex();
-		if ( null !== selectedRangeChunkIndex ) {
-			props.chunk = selectedRangeChunkIndex;
-		} else if ( this.state.chunk + 1 === this.chunks.length ) {
-			props.chunk = 0;
+		const chunkSelection = this.getSelectedRangeChunkIndexWithCharOffset();
+		if ( chunkSelection ) {
+			Object.assign( props, chunkSelection );
+		} else if ( this.state.chunkIndex + 1 === this.chunks.length ) {
+			props.chunkIndex = 0;
+			props.chunkRangeOffset = 0;
 		}
 		this.setState( props );
 	}
@@ -468,27 +489,38 @@ export default class Speech {
 			}
 		};
 
+		// Clear the queue so we can start speaking.
+		if ( speechSynthesis.speaking || speechSynthesis.pending ) {
+			speechSynthesis.cancel();
+		}
+
 		const queueNextChunk = () => {
-			if ( this.state.chunk + 1 === this.chunks.length ) {
+			if ( this.state.chunkIndex + 1 === this.chunks.length ) {
 				reject( 'playback_completed' );
 				return;
 			}
 
-			const thisChunk = this.chunks[ this.state.chunk ];
-			const nextChunk = this.chunks[ this.state.chunk + 1 ];
+			const thisChunk = this.chunks[ this.state.chunkIndex ];
+			const nextChunk = this.chunks[ this.state.chunkIndex + 1 ];
 			const pauseDuration = this.getInterChunkPause( thisChunk, nextChunk );
-			const currentChunk = this.state.chunk;
+			const currentChunk = this.state.chunkIndex;
 			this.setState( {
 				speakTimeoutId: setTimeout( () => {
 					this.setState( {
-						chunk: currentChunk + 1, // This state change will cause startPlayingCurrentChunkAndQueueNext to be called.
+						chunkIndex: currentChunk + 1, // This state change will cause startPlayingCurrentChunkAndQueueNext to be called.
+						chunkRangeOffset: 0, // Start at beginning of chunk.
 					} );
 				}, pauseDuration * this.state.rate ),
 			} );
 		};
 
+		// Make sure voices are loaded and speech synthesis has been completely stopped (since cancel is async).
 		voices.load().then( () => {
-			this.speakChunk( this.state.chunk ).then( queueNextChunk, reject );
+			this.setState( {
+				speakTimeoutId: setTimeout( () => {
+					this.speakChunk().then( queueNextChunk, reject );
+				} ),
+			} );
 		}, reject );
 	}
 
@@ -510,8 +542,10 @@ export default class Speech {
 	 * Go to previous chunk and play.
 	 */
 	previous() {
+		// @todo This needs to first only set chunkRangeOffset but then if previous gets called again and the chunkRangeOffset is small enough, or this was called under a second ago, then decrease chunkIndex as well.
 		const props = {
-			chunk: Math.max( this.state.chunk - 1, 0 ),
+			chunkIndex: Math.max( this.state.chunkIndex - 1, 0 ),
+			chunkRangeOffset: 0,
 		};
 		if ( 'paused' === this.state.playback ) {
 			props.playback = 'playing';
@@ -524,7 +558,8 @@ export default class Speech {
 	 */
 	next() {
 		const props = {
-			chunk: Math.min( this.state.chunk + 1, this.chunks.length - 1 ),
+			chunkIndex: Math.min( this.state.chunkIndex + 1, this.chunks.length - 1 ),
+			chunkRangeOffset: 0,
 		};
 		if ( 'paused' === this.state.playback ) {
 			props.playback = 'playing';
