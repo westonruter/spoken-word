@@ -153,6 +153,7 @@ export default class Speech {
 				selection.removeAllRanges();
 				range.setStart( firstNode, 0 );
 				range.setEnd( lastNode, lastNode.length );
+				this.playbackAddedRange = range;
 				selection.addRange( range );
 				firstNode.parentElement.scrollIntoView( { behavior: 'smooth' } );
 			}
@@ -376,6 +377,7 @@ export default class Speech {
 				if ( /\w/.test( currentToken ) ) {
 					range.setStart( currentTextNode, startOffset );
 					range.setEnd( currentTextNode, Math.min( startOffset + currentToken.length, currentTextNode.length ) );
+					this.playbackAddedRange = range;
 					selection.addRange( range );
 					currentTextNode.parentElement.scrollIntoView( { behavior: 'smooth' } );
 				}
@@ -415,26 +417,26 @@ export default class Speech {
 	/**
 	 * Get chunk index for the current selected range.
 	 *
-	 * @todo Consider stopping playback when selectionchange happens.
+	 * @param {Range} [range] - Range. Defaults to current selection range.
 	 * @returns {Object|null} Chunk index and char offset for current selection, or null if not selected.
 	 */
-	getSelectedRangeChunkIndexWithCharOffset() {
-		const selection = window.getSelection();
-		if ( 1 !== selection.rangeCount ) {
-			return null;
+	getChunkPositionFromRange( range = null ) {
+		let selectedRange = range;
+		if ( ! selectedRange ) {
+			const selection = window.getSelection();
+			if ( 1 !== selection.rangeCount ) {
+				return null;
+			}
+			selectedRange = selection.getRangeAt( 0 );
 		}
-		const range = selection.getRangeAt( 0 );
-		if ( range.isCollapsed ) { // @todo && 'playing' !== this.state.playback?
-			return null;
-		}
-		if ( range.startContainer.nodeType !== Node.TEXT_NODE ) {
+		if ( selectedRange.startContainer.nodeType !== Node.TEXT_NODE ) {
 			return null;
 		}
 		for ( let chunkIndex = 0; chunkIndex < this.chunks.length; chunkIndex++ ) {
 			let chunkRangeOffset = 0;
 			for ( const node of this.chunks[ chunkIndex ].nodes ) {
-				if ( range.startContainer === node ) {
-					chunkRangeOffset += range.startOffset;
+				if ( selectedRange.startContainer === node ) {
+					chunkRangeOffset += selectedRange.startOffset;
 					return { chunkIndex, chunkRangeOffset };
 				}
 				chunkRangeOffset += node.length;
@@ -444,16 +446,42 @@ export default class Speech {
 	}
 
 	/**
-	 * Update containsSelection state based on whether range is inside of root element.
+	 * Update containsSelection state based on whether range is inside of root element; update selected chunk position if user-selected range.
 	 */
 	updateContainsSelectionState() {
 		const selection = window.getSelection();
 		if ( 0 !== selection.rangeCount ) {
 			const range = selection.getRangeAt( 0 );
-			this.setState( {
+			const props = {
 				containsSelection: this.rootElement.contains( range.startContainer ) || this.rootElement.contains( range.endContainer ),
-			} );
+			};
+
+			// Move current playback to newly selected range if not added programmatically.
+			if ( 'playing' === this.state.playback && this.playbackAddedRange && ! this.equalRanges( range, this.playbackAddedRange ) ) {
+				const chunkSelection = this.getChunkPositionFromRange( range );
+				if ( chunkSelection ) {
+					Object.assign( props, chunkSelection );
+				}
+			}
+
+			this.setState( props );
 		}
+	}
+
+	/**
+	 * Compare if two ranges have the same containers and offsets.
+	 *
+	 * @param {Range} range1 - First range.
+	 * @param {Range} range2 - Second range.
+	 * @return {boolean} Whether same.
+	 */
+	equalRanges( range1, range2 ) {
+		return (
+			range1.startContainer === range2.startContainer &&
+			range1.startOffset === range2.startOffset &&
+			range1.endContainer === range2.endContainer &&
+			range1.endOffset === range2.endOffset
+		);
 	}
 
 	/**
@@ -466,7 +494,7 @@ export default class Speech {
 			playback: 'playing',
 		};
 
-		const chunkSelection = this.getSelectedRangeChunkIndexWithCharOffset();
+		const chunkSelection = this.getChunkPositionFromRange();
 		if ( chunkSelection ) {
 			Object.assign( props, chunkSelection );
 		} else if ( this.state.chunkIndex + 1 === this.chunks.length ) {
