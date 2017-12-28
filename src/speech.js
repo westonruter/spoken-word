@@ -84,21 +84,9 @@ export default class Speech {
 		this.injectControls();
 		this.setupStateMachine();
 
-		// @todo Why is
 		// @todo Also if focus removed from container?
-		document.addEventListener( 'selectstart', () => {
-			setTimeout( () => { // @todo Is there a better way to do this? A selectend?
-				const selection = window.getSelection();
-				if ( 0 === selection.rangeCount ) {
-					this.setState( { containsSelection: false } );
-				} else {
-					const range = selection.getRangeAt( 0 );
-					this.setState( {
-						containsSelection: this.rootElement.contains( range.startContainer ) || this.rootElement.contains( range.endContainer ),
-					} );
-				}
-			} );
-		} );
+		this.updateContainsSelectionState = this.updateContainsSelectionState.bind( this );
+		document.addEventListener( 'selectionchange', this.updateContainsSelectionState );
 
 		// @todo Add mutationObserver for this element to call this.chunkify() again.
 		// @todo Add mutation observer to destroy once this.rootElement is removed.
@@ -157,7 +145,6 @@ export default class Speech {
 			if ( 'playing' === this.state.playback ) {
 				this.startPlayingCurrentChunkAndQueueNext();
 			} else {
-				// Select the entire chunk instead of speaking it.
 				const selection = window.getSelection();
 				const range = document.createRange();
 				const chunk = this.chunks[ this.state.chunkIndex ];
@@ -167,7 +154,7 @@ export default class Speech {
 				range.setStart( firstNode, 0 );
 				range.setEnd( lastNode, lastNode.length );
 				selection.addRange( range );
-				this.setState( { containsSelection: true } );
+				firstNode.parentElement.scrollIntoView( { behavior: 'smooth' } );
 			}
 		};
 
@@ -390,7 +377,7 @@ export default class Speech {
 					range.setStart( currentTextNode, startOffset );
 					range.setEnd( currentTextNode, Math.min( startOffset + currentToken.length, currentTextNode.length ) );
 					selection.addRange( range );
-					this.setState( { containsSelection: true } );
+					currentTextNode.parentElement.scrollIntoView( { behavior: 'smooth' } );
 				}
 			};
 
@@ -454,6 +441,19 @@ export default class Speech {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Update containsSelection state based on whether range is inside of root element.
+	 */
+	updateContainsSelectionState() {
+		const selection = window.getSelection();
+		if ( 0 !== selection.rangeCount ) {
+			const range = selection.getRangeAt( 0 );
+			this.setState( {
+				containsSelection: this.rootElement.contains( range.startContainer ) || this.rootElement.contains( range.endContainer ),
+			} );
+		}
 	}
 
 	/**
@@ -583,6 +583,7 @@ export default class Speech {
 	 * Destroy speech.
 	 */
 	destroy() {
+		document.removeEventListener( 'selectionchange', this.updateContainsSelectionState );
 		// @todo Tear down mutation observer.
 		// @todo Stop uttterance.
 	}
