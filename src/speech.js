@@ -3,6 +3,7 @@ import EventEmitter from 'event-emitter';
 
 import chunkify from './chunkify';
 import * as voices from './voices';
+import { equalRanges } from './helpers';
 
 /**
  * A segment of text nodes that are to be read by the TTS engine.
@@ -26,9 +27,6 @@ const CHUNK_BEGINNING_OFFSET_THRESHOLD = 10;
  * @augments EventEmitter
  */
 export default class Speech {
-	// @todo Have reference to current utterance.
-	// @todo Make sure that when an utterance starts, all other articles in the collection get their utterances paused.
-	// @todo Destroy method should stop utterance.
 
 	/**
 	 * Construct.
@@ -61,7 +59,7 @@ export default class Speech {
 			playback: 'stopped',
 			chunkIndex: 0, // Which chunk is playing.
 			chunkRangeOffset: 0, // Which character inside the chunk's nodes was last spoken.
-			voice: '', // @todo
+			voice: '', // @todo Change this to voices, mapping language to voiceURI.
 			rate: 1.0,
 			pitch: 1.0,
 		};
@@ -198,9 +196,13 @@ export default class Speech {
 		this.controlButtons.next = this.createButton( '⏩', 'Next' );
 		container.appendChild( this.controlButtons.next );
 
-		// @todo Should this be a dialog?
 		this.controlButtons.settings = this.createButton( '⚙️', 'Settings' );
 		container.appendChild( this.controlButtons.settings );
+
+		// @todo Number input for rate.
+		// @todo Number input for pitch.
+		// @todo Dropdown for each language represented in the chunks.
+
 		const dialog = document.createElement( 'dialog' );
 		dialog.innerHTML = '<p>Hello world!</p>';
 		container.appendChild( dialog );
@@ -349,6 +351,14 @@ export default class Speech {
 			let previousSpokenNodesLength = 0;
 			let currentChunkRangeOffset = this.state.chunkRangeOffset;
 
+			/**
+			 * On boundary change.
+			 *
+			 * @param {Event} event - Boundary event.
+			 * @param {string} event.name - Type of boundary.
+			 * @param {number} event.charIndex - Index in text which is being spoken.
+			 * @param {SpeechSynthesisUtterance} event.currentTarget - Current utterance.
+			 */
 			this.currentUtterance.onboundary = ( event ) => {
 				if ( 'word' !== event.name ) {
 					return;
@@ -383,6 +393,9 @@ export default class Speech {
 				}
 			};
 
+			/**
+			 * Resolve or reject the promise when the utterance ends depending on why it ended.
+			 */
 			this.currentUtterance.onend = () => {
 				this.currentUtterance = null;
 				selection.removeAllRanges();
@@ -457,7 +470,7 @@ export default class Speech {
 			};
 
 			// Move current playback to newly selected range if not added programmatically.
-			if ( 'playing' === this.state.playback && this.playbackAddedRange && ! this.equalRanges( range, this.playbackAddedRange ) ) {
+			if ( 'playing' === this.state.playback && this.playbackAddedRange && ! equalRanges( range, this.playbackAddedRange ) ) {
 				const chunkSelection = this.getChunkPositionFromRange( range );
 				if ( chunkSelection ) {
 					Object.assign( props, chunkSelection );
@@ -466,22 +479,6 @@ export default class Speech {
 
 			this.setState( props );
 		}
-	}
-
-	/**
-	 * Compare if two ranges have the same containers and offsets.
-	 *
-	 * @param {Range} range1 - First range.
-	 * @param {Range} range2 - Second range.
-	 * @return {boolean} Whether same.
-	 */
-	equalRanges( range1, range2 ) {
-		return (
-			range1.startContainer === range2.startContainer &&
-			range1.startOffset === range2.startOffset &&
-			range1.endContainer === range2.endContainer &&
-			range1.endOffset === range2.endOffset
-		);
 	}
 
 	/**
@@ -611,9 +608,11 @@ export default class Speech {
 	 * Destroy speech.
 	 */
 	destroy() {
+		if ( 'playing' === this.state.playback ) {
+			speechSynthesis.cancel();
+		}
 		document.removeEventListener( 'selectionchange', this.updateContainsSelectionState );
 		// @todo Tear down mutation observer.
-		// @todo Stop uttterance.
 	}
 }
 
