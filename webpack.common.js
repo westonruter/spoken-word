@@ -1,6 +1,7 @@
 /* eslint-env node */
 
 const path = require( 'path' );
+const CleanWebpackPlugin = require( 'clean-webpack-plugin' );
 
 module.exports = {
 	entry: './src/index.js',
@@ -10,7 +11,9 @@ module.exports = {
 		libraryTarget: 'window',
 		library: 'spokenWord',
 	},
-	devtool: 'source-map',
+	plugins: [
+		new CleanWebpackPlugin( [ 'dist' ] ),
+	],
 	module: {
 		rules: [
 			{
