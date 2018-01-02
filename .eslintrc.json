@@ -1,12 +1,23 @@
 {
-	"extends": "wordpress",
+	"extends": [
+		"wordpress",
+		"plugin:react/recommended",
+		"plugin:jsx-a11y/recommended"
+	],
 	"env": {
 		"es6": true
 	},
 	"parserOptions": {
 		"ecmaVersion": 6,
-		"sourceType": "module"
+		"sourceType": "module",
+		"ecmaFeatures": {
+			"jsx": true
+		}
 	},
+	"plugins": [
+		"react",
+		"jsx-a11y"
+	],
 	"rules": {
 		"array-bracket-spacing": [ "error", "always" ],
 		"brace-style": [ "error", "1tbs" ],
@@ -21,6 +32,11 @@
 		"eqeqeq": "error",
 		"func-call-spacing": "error",
 		"indent": [ "error", "tab", { "SwitchCase": 1 } ],
+		"jsx-a11y/label-has-for": [ 2, {
+			"required": {
+				"every": [ "id" ]
+			}
+		}],
 		"key-spacing": "error",
 		"keyword-spacing": "error",
 		"lines-around-comment": "off",
@@ -117,6 +133,7 @@
 		"padded-blocks": [ "error", "never" ],
 		"prefer-const": "error",
 		"quote-props": [ "error", "as-needed" ],
+		"react/prop-types": "off",
 		"semi": "error",
 		"semi-spacing": "error",
 		"space-before-blocks": [ "error", "always" ],

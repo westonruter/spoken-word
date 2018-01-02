@@ -1,9 +1,11 @@
 
+import React, { render } from 'preact-compat';
 import EventEmitter from 'event-emitter';
 
 import chunkify from './chunkify';
 import * as voices from './voices';
 import { equalRanges } from './helpers';
+import PlaybackControls from './components/PlaybackControls';
 
 /**
  * A segment of text nodes that are to be read by the TTS engine.
@@ -27,7 +29,6 @@ const CHUNK_BEGINNING_OFFSET_THRESHOLD = 10;
  * @augments EventEmitter
  */
 export default class Speech {
-
 	/**
 	 * Construct.
 	 *
@@ -176,6 +177,13 @@ export default class Speech {
 	 * Setup controls.
 	 */
 	setupControls() {
+
+
+
+		return;
+
+		// PlaybackControls
+
 		const container = document.createElement( 'fieldset' );
 
 		const legend = document.createElement( 'legend' );
@@ -252,7 +260,15 @@ export default class Speech {
 	 * Inject controls into content.
 	 */
 	injectControls() {
+		this.controlsElement = document.createElement( 'div' );
 		this.rootElement.insertBefore( this.controlsElement, this.rootElement.firstChild );
+		const props = {
+			play: this.play.bind( this ),
+			stop: this.stop.bind( this ),
+			next: this.next.bind( this ),
+			previous: this.previous.bind( this ),
+		};
+		render( <PlaybackControls { ...props } />, this.controlsElement );
 	}
 
 	/**

@@ -14,3 +14,15 @@ export function equalRanges( range1, range2 ) {
 		range1.endOffset === range2.endOffset
 	);
 }
+
+let lastId = 0;
+
+/**
+ * Generate unique (auto-incremented) ID.
+ *
+ * @return {number} ID.
+ */
+export function uniqueId() {
+	lastId++;
+	return lastId;
+}
