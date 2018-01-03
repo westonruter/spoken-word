@@ -1,67 +1,98 @@
 <?php
 /**
- * Plugin Name: Spoken Content
- * Author: Weston Ruter, XWP
+ * Spoken Word
+ *
+ * @package   Spoken_Word
+ * @author    Weston Ruter
+ * @copyright 2018
+ * @license   GPL-2.0+
+ *
+ * @wordpress-plugin
+ * Plugin Name: Spoken Word
+ * Description: Add text-to-speech (TTS) to content, with playback controls, read-along highlighting, multi-lingual support, and settings for rate, pitch, and voice.
+ * Author: Weston Ruter
  * License: GPLv2+
  */
 
-add_filter( 'the_content', function( $content ) {
-	if ( is_feed() ) { // @todo Better condition.
-		return $content;
-	}
-	ob_start();
-	?>
-	<fieldset hidden class="spoken-content-controls">
-		<legend><?php esc_html_e( 'Spoken Content', 'spoken-content' ); ?></legend>
-		<!-- TODO: Dashicons or Unicode. -->
-		<div>
-			<button type="button" class="play">
-				Play<!-- TODO: translations -->
-			</button>
-			<button type="button" class="previous" disabled>
-				Previous
-			</button>
-			<button type="button" class="pause-resume pause" disabled>
-				Pause/Resume
-			</button>
-			<button type="button" class="next" disabled>
-				Next
-			</button>
-			<button type="button" class="stop" disabled>
-				Stop
-			</button>
-		</div>
-		<details class="spoken-content-controls-advanced">
-			<summary>Advanced</summary>
-			<div>
-				<label>
-					Voice:
-					<select class="voice"></select>
-				</label>
-			</div>
-			<div>
-				<label>
-					Rate:
-					<input type="range" class="rate" min="0.1" step="0.1" max="10" value="1"><!-- TODO show current value -->
-				</label>
-			</div>
-			<div>
-				<label>
-					Pitch:
-					<input type="range" class="pitch" value="1" min="0" max="2" step="0.1"><!-- TODO show current value -->
-				</label>
-			</div>
-		</details>
-		<!-- Volume -->
-		<!-- Rate -->
-		<!-- Pitch -->
-	</fieldset>
-	<?php
-	$controls = ob_get_clean();
-	return $controls . $content;
-}, 100 );
+namespace Spoken_Word;
 
-add_action( 'wp_enqueue_scripts', function() {
-	wp_enqueue_script( 'spoken-content', plugin_dir_url( __FILE__ ) . 'spoken-content.js', array( 'jquery' ) );
-	wp_enqueue_style( 'spoken-content', plugin_dir_url( __FILE__ ) . 'spoken-content.css' );
-} );
+const VERSION = '0.1.0';
+
+/**
+ * Enqueue scripts.
+ *
+ * @since 0.1.0
+ */
+function enqueue_scripts() {
+	$handle = 'spoken-word';
+	wp_enqueue_style( 'dashicons' );
+	$src = plugin_dir_url( __FILE__ ) . 'dist/app.js';
+	$deps = array();
+	$in_footer = true;
+	wp_enqueue_script( $handle, $src, $deps, VERSION, $in_footer );
+
+	// Export locale data.
+	wp_add_inline_script(
+		'spoken-word',
+		'spokenWord.setLocaleData( ' . json_encode( get_jed_locale_data( 'spoken-word' ) ) . ' );',
+		'after'
+	);
+
+	// Initialize.
+	$exports = array(
+		'contentSelector' => '.hentry .entry-content, .h-entry .e-content, [itemprop="articleBody"]',
+		'useDashicons' => \wp_style_is( 'dashicons', 'enqueued' ),
+	);
+	wp_add_inline_script( $handle, sprintf( 'spokenWord.init( %s );', wp_json_encode( $exports ) ), 'after' );
+
+	wp_enqueue_style( $handle, plugin_dir_url( __FILE__ ) . 'css/style.css' ); // @todo
+}
+add_action( 'wp_enqueue_scripts', __NAMESPACE__ . '\enqueue_scripts' );
+
+/**
+ * Returns Jed-formatted localization data.
+ *
+ * @since 0.1.0
+ *
+ * @param string $domain Translation domain.
+ * @return array
+ */
+function get_jed_locale_data( $domain ) {
+	$translations = \get_translations_for_domain( $domain );
+
+	$locale = array(
+		'domain'      => $domain,
+		'locale_data' => array(
+			$domain => array(
+				'' => array(
+					'domain' => $domain,
+					'lang'   => \is_admin() ? \get_user_locale() : \get_locale(),
+				),
+			),
+		),
+	);
+
+	if ( ! empty( $translations->headers['Plural-Forms'] ) ) {
+		$locale['locale_data'][ $domain ]['']['plural_forms'] = $translations->headers['Plural-Forms'];
+	}
+
+	foreach ( $translations->entries as $msgid => $entry ) {
+		$locale['locale_data'][ $domain ][ $msgid ] = $entry->translations;
+	}
+
+	return $locale;
+}
+
+/**
+ * Load plugin text domain for translations.
+ *
+ * @since 0.1.0
+ */
+function load_plugin_textdomain() {
+	\load_plugin_textdomain(
+		'spoken-word',
+		false,
+		plugin_basename( dirname( __FILE__ ) ) . '/languages/'
+	);
+}
+add_action( 'plugins_loaded', __NAMESPACE__ . '\load_plugin_textdomain' );

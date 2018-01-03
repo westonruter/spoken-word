@@ -1,5 +1,6 @@
 
 import Speech from './speech';
+export { setLocaleData } from './i18n';
 
 /**
  *

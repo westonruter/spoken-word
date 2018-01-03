@@ -18,5 +18,10 @@
 				]
 			}
 		} ]
+	],
+	"plugins": [
+		[ "./src/i18n/babel-plugin", {
+			"output": "languages/spoken-word.pot"
+		} ]
 	]
 }

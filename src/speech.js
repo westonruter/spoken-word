@@ -71,7 +71,6 @@ export default class Speech {
 		this.defaultPitch = defaultPitch;
 
 		// @todo Translation strings.
-		// @todo Voice preferences?
 	}
 
 	/**

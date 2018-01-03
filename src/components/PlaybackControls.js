@@ -1,4 +1,5 @@
 
+import { __ } from '../i18n';
 import React, { Component } from 'preact-compat';
 import PropTypes from 'prop-types';
 import PlaybackButton from './PlaybackButton';
@@ -52,30 +53,30 @@ export default class PlaybackControls extends Component {
 		};
 
 		return (
-			<fieldset>
-				<legend>Playback</legend>
-				<PlaybackButton icon="▶" label="Play" onClick={ this.props.play } />
-				<PlaybackButton icon="⏹" label="Stop" onClick={ this.props.stop } />
-				<PlaybackButton icon="⏪" label="Previous" onClick={ this.props.previous } />
-				<PlaybackButton icon="⏩" label="Forward" onClick={ this.props.next } />
-				<PlaybackButton icon="⚙" label="Settings" onClick={ showDialog } />
+			<fieldset className="spoken-word-playback-controls">
+				<legend>{ __( 'Text to Speech' ) }</legend>
+				<PlaybackButton icon="▶" label={ __( 'Play' ) } onClick={ this.props.play } />
+				<PlaybackButton icon="⏹" label={ __( 'Stop' ) } onClick={ this.props.stop } />
+				<PlaybackButton icon="⏪" label={ __( 'Previous' ) } onClick={ this.props.previous } />
+				<PlaybackButton icon="⏩" label={ __( 'Forward' ) } onClick={ this.props.next } />
+				<PlaybackButton icon="⚙" label={ __( 'Settings' ) } onClick={ showDialog } />
 
 				<dialog ref={ saveDialogRef }>
 					<p>
-						<label htmlFor={ this.idPrefix + 'rate' }>Rate:</label>
+						<label htmlFor={ this.idPrefix + 'rate' }>{ __( 'Rate:' ) }</label>
 						<input id={ this.idPrefix + 'rate' } type="number" defaultValue={1.0} />
 					</p>
 					<p>
-						<label htmlFor={ this.idPrefix + 'pitch' }>Pitch:</label>
+						<label htmlFor={ this.idPrefix + 'pitch' }>{ __( 'Pitch:' ) }</label>
 						<input id={ this.idPrefix + 'pitch' } type="number" defaultValue={1.0} />
 					</p>
 					<p>
-						<label htmlFor={ this.idPrefix + 'voice[en]' }>English Voice:</label>
+						<label htmlFor={ this.idPrefix + 'voice[en]' }>{ __( 'Voice:' ) }</label>
 						<select id={ this.idPrefix + 'voice[en]' }>
 							<option>Alex</option>
 						</select>
 					</p>
-					<button onClick={ hideDialog }>Close</button>
+					<button onClick={ hideDialog }>{ __( 'Close' ) }</button>
 				</dialog>
 			</fieldset>
 		);
