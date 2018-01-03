@@ -1,5 +1,5 @@
 
-import React, { render } from 'preact-compat';
+import React, { render, unmountComponentAtNode } from 'preact-compat';
 import EventEmitter from 'event-emitter';
 
 import chunkify from './chunkify';
@@ -79,7 +79,6 @@ export default class Speech {
 	 */
 	initialize() {
 		this.chunkify();
-		this.setupControls();
 		this.injectControls();
 		this.setupStateMachine();
 
@@ -174,93 +173,10 @@ export default class Speech {
 	}
 
 	/**
-	 * Setup controls.
-	 */
-	setupControls() {
-
-
-
-		return;
-
-		// PlaybackControls
-
-		const container = document.createElement( 'fieldset' );
-
-		const legend = document.createElement( 'legend' );
-		legend.appendChild( document.createTextNode( 'Speak' ) );
-		container.appendChild( legend );
-
-		// @todo The buttons need to by styled according to the current state.
-		// @todo The following buttons should not all be displayed and/or enabled at a time.
-		this.controlButtons.play = this.createButton( '▶', 'Play' );
-		container.appendChild( this.controlButtons.play );
-
-		this.controlButtons.stop = this.createButton( '⏹', 'Stop' );
-		container.appendChild( this.controlButtons.stop );
-
-		this.controlButtons.previous = this.createButton( '⏪', 'Previous' );
-		container.appendChild( this.controlButtons.previous );
-
-		this.controlButtons.next = this.createButton( '⏩', 'Next' );
-		container.appendChild( this.controlButtons.next );
-
-		this.controlButtons.settings = this.createButton( '⚙️', 'Settings' );
-		container.appendChild( this.controlButtons.settings );
-
-		// @todo Number input for rate.
-		// @todo Number input for pitch.
-		// @todo Dropdown for each language represented in the chunks.
-
-		const dialog = document.createElement( 'dialog' );
-		dialog.innerHTML = '<p>Hello world!</p>';
-		container.appendChild( dialog );
-		this.controlButtons.settings.addEventListener( 'click', () => {
-			// @todo Lazy-load dialogPolyfill.
-			dialog.showModal();
-		} );
-
-		[ 'play', 'previous', 'next', 'stop' ].forEach( ( id ) => {
-			this.controlButtons[ id ].addEventListener( 'click', this[ id ].bind( this ) );
-		} );
-
-		// Keep the controls in view when playing.
-		this.on( 'change:containsSelection', ( contains ) => {
-			if ( contains ) {
-				container.style.position = 'sticky';
-				container.style.top = 0;
-			} else {
-				container.style.position = '';
-			}
-		} );
-
-		this.controlsElement = container;
-	}
-
-	/**
-	 * Create button.
-	 *
-	 * @todo Styles should not be inline; bookmarklet can load external stylesheet.
-	 * @param {string} icon  - Emoji icon.
-	 * @param {string} label - Label for button.
-	 * @returns {Element} Button.
-	 */
-	createButton( icon, label ) {
-		const button = document.createElement( 'button' );
-		button.type = 'button';
-		button.appendChild( document.createTextNode( icon ) );
-		button.setAttribute( 'aria-label', label );
-		button.style.fontFamily = '"Apple Color Emoji","Segoe UI Emoji","NotoColorEmoji","Segoe UI Symbol","Android Emoji","EmojiSymbols"';
-		button.style.background = 'none';
-		button.style.border = 'none';
-		button.style.cursor = 'pointer';
-		return button;
-	}
-
-	/**
 	 * Inject controls into content.
 	 */
 	injectControls() {
-		this.controlsElement = document.createElement( 'div' );
+		this.controlsElement = document.createElement( 'div' ); // @todo Check to see if this element is already present, and use merge data-* with props.
 		this.rootElement.insertBefore( this.controlsElement, this.rootElement.firstChild );
 		const props = {
 			play: this.play.bind( this ),
@@ -627,7 +543,8 @@ export default class Speech {
 		if ( 'playing' === this.state.playback ) {
 			speechSynthesis.cancel();
 		}
-		document.removeEventListener( 'selectionchange', this.updateContainsSelectionState );
+		document.removeEventListener( 'selectionchange', this.controlsElement );
+		unmountComponentAtNode( this.controlsElement );
 		// @todo Tear down mutation observer.
 	}
 }
