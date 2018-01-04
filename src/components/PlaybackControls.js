@@ -53,15 +53,11 @@ export default class PlaybackControls extends Component {
 		};
 
 		const classNames = [ 'spoken-word-playback-controls' ];
-
-		// Prevent MutationObserver in wpEmoji from interfering with React-rendered element.
-		classNames.push( 'wp-exclude-emoji' );
-
 		const isPlaying = 'playing' === this.props.playback;
 
 		return (
 			<fieldset className={ classNames.join( ' ' ) }>
-				<legend>{ __( 'Text to Speech' ) }</legend>
+				<legend className="spoken-word-playback-controls__legend">{ __( 'Text to Speech' ) }</legend>
 
 				<PlaybackButton
 					useDashicon={ this.props.useDashicons }

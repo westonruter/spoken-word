@@ -6,8 +6,12 @@ export default class PlaybackButton extends Component {
 		const style = {};
 		const buttonClassNames = [ 'spoken-word-playback-controls__button' ];
 
-		if ( ! this.props.useDashicon ) {
-			style.fontFamily = '"Apple Color Emoji", "Segoe UI Emoji", "NotoColorEmoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols"';
+		if ( this.props.useDashicon ) {
+			buttonClassNames.push( 'spoken-word-playback-controls__button--dashicon' );
+		} else {
+			// Prevent MutationObserver in wpEmoji from interfering with React-rendered element.
+			buttonClassNames.push( 'wp-exclude-emoji' );
+			buttonClassNames.push( 'spoken-word-playback-controls__button--emoji' );
 		}
 
 		return (

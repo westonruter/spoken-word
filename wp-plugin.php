@@ -25,7 +25,7 @@ const VERSION = '0.1.0';
  */
 function enqueue_scripts() {
 	wp_enqueue_style( 'dashicons' );
-	wp_enqueue_style( 'spoken-word', plugin_dir_url( __FILE__ ) . 'css/style.css' ); // @todo
+	wp_enqueue_style( 'spoken-word', plugin_dir_url( __FILE__ ) . 'css/style.css' );
 
 	$handle = 'spoken-word';
 	$src = plugin_dir_url( __FILE__ ) . 'dist/app.js';

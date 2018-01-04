@@ -25,6 +25,7 @@ const DEFAULT_PAUSE_DURATIONS = {
 const CHUNK_BEGINNING_OFFSET_THRESHOLD = 10;
 
 /**
+ * @todo Rename to Controller.
  * @class Speech
  * @augments EventEmitter
  */
@@ -164,6 +165,14 @@ export default class Speech {
 			}
 		};
 
+		this.on( 'change:containsSelection', ( selected ) => {
+			if ( selected ) {
+				this.controlsElement.classList.add( 'spoken-word--active' );
+			} else {
+				this.controlsElement.classList.remove( 'spoken-word--active' );
+			}
+		} );
+
 		this.on( 'change:chunkIndex', handleChunkChange );
 		this.on( 'change:chunkRangeOffset', handleChunkChange );
 	}
@@ -184,6 +193,7 @@ export default class Speech {
 	 */
 	injectControls() {
 		this.controlsElement = document.createElement( 'div' ); // @todo Check to see if this element is already present, and use merge data-* with props.
+		this.controlsElement.classList.add( 'spoken-word' );
 		this.rootElement.insertBefore( this.controlsElement, this.rootElement.firstChild );
 	}
 

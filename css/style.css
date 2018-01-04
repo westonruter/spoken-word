@@ -1,0 +1,41 @@
+
+.spoken-word {
+	margin-top: 1em;
+	margin-bottom: 1em;
+}
+
+.spoken-word--active {
+	position: sticky;
+	top: 0.5em;
+}
+
+body.admin-bar .spoken-word--active {
+	top: calc( 0.5em + 32px );
+}
+
+.spoken-word-playback-controls {
+	border: 0;
+	margin: 0;
+	outline: 0;
+	padding: 0;
+}
+.spoken-word-playback-controls__legend {
+	border: 0;
+	clip: rect(1px, 1px, 1px, 1px);
+	-webkit-clip-path: inset(50%);
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	width: 1px;
+	word-wrap: normal !important; /* many screen reader and browser combinations announce broken words as they would appear visually */
+}
+
+.spoken-word-playback-controls__button {
+	cursor: pointer;
+}
+.spoken-word-playback-controls__button--emoji {
+	font-family: "Apple Color Emoji", "Segoe UI Emoji", "NotoColorEmoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
+}
