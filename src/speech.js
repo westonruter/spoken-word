@@ -55,6 +55,10 @@ export default class Speech {
 		this.controlsElement = null;
 		this.currentUtterance = null;
 
+		for ( const method of [ 'play', 'stop', 'next', 'previous', 'updateContainsSelectionState' ] ) {
+			this[ method ] = this[ method ].bind( this );
+		}
+
 		this.state = {
 			containsSelection: false,
 			speakTimeoutId: 0,
@@ -83,8 +87,9 @@ export default class Speech {
 		this.setupStateMachine();
 
 		// @todo Also if focus removed from container?
-		this.updateContainsSelectionState = this.updateContainsSelectionState.bind( this );
 		document.addEventListener( 'selectionchange', this.updateContainsSelectionState );
+
+		this.renderControls();
 
 		// @todo Add mutationObserver for this element to call this.chunkify() again.
 		// @todo Add mutation observer to destroy once this.rootElement is removed.
@@ -117,6 +122,8 @@ export default class Speech {
 		if ( ! suppressEvents ) {
 			this.emit( 'change', newProps, oldProps );
 		}
+
+		this.renderControls();
 	}
 
 	/**
@@ -178,13 +185,23 @@ export default class Speech {
 	injectControls() {
 		this.controlsElement = document.createElement( 'div' ); // @todo Check to see if this element is already present, and use merge data-* with props.
 		this.rootElement.insertBefore( this.controlsElement, this.rootElement.firstChild );
-		const props = {
-			play: this.play.bind( this ),
-			stop: this.stop.bind( this ),
-			next: this.next.bind( this ),
-			previous: this.previous.bind( this ),
-			useDashicons: this.useDashicons,
-		};
+	}
+
+	/**
+	 * Render controls.
+	 */
+	renderControls() {
+		const props = Object.assign(
+			{},
+			this.state,
+			{
+				play: this.play,
+				stop: this.stop,
+				next: this.next,
+				previous: this.previous,
+				useDashicons: this.useDashicons,
+			}
+		);
 		render( <PlaybackControls { ...props } />, this.controlsElement );
 	}
 

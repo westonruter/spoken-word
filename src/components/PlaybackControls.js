@@ -57,11 +57,20 @@ export default class PlaybackControls extends Component {
 		// Prevent MutationObserver in wpEmoji from interfering with React-rendered element.
 		classNames.push( 'wp-exclude-emoji' );
 
+		const isPlaying = 'playing' === this.props.playback;
+
 		return (
 			<fieldset className={ classNames.join( ' ' ) }>
 				<legend>{ __( 'Text to Speech' ) }</legend>
-				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="controls-play" emoji="▶" label={ __( 'Play' ) } onClick={ this.props.play } />
-				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="controls-pause" emoji="⏹" label={ __( 'Stop' ) } onClick={ this.props.stop } />
+
+				<PlaybackButton
+					useDashicon={ this.props.useDashicons }
+					dashicon={ isPlaying ? 'controls-pause' : 'controls-play' }
+					emoji={ isPlaying ? '⏸️' : '▶' }
+					label={ isPlaying ? __( 'Pause' ) : __( 'Play' ) }
+					onClick={ isPlaying ? this.props.stop : this.props.play }
+				/>
+
 				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="controls-back" emoji="⏪" label={ __( 'Previous' ) } onClick={ this.props.previous } />
 				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="controls-forward" emoji="⏩" label={ __( 'Forward' ) } onClick={ this.props.next } />
 				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="admin-settings" emoji="⚙" label={ __( 'Settings' ) } onClick={ showDialog } />
@@ -89,6 +98,7 @@ export default class PlaybackControls extends Component {
 }
 
 PlaybackControls.propTypes = {
+	playback: PropTypes.string.isRequired,
 	play: PropTypes.func.isRequired,
 	stop: PropTypes.func.isRequired,
 	previous: PropTypes.func.isRequired,
