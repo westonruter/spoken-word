@@ -9,8 +9,16 @@
 	top: 0.5em;
 }
 
-body.admin-bar .spoken-word--active {
-	top: calc( 0.5em + 32px );
+@media screen and ( min-width: 782px ) {
+	body.admin-bar .spoken-word--active {
+		top: calc( 0.5em + 32px );
+	}
+}
+
+@media screen and ( min-width: 600px ) and ( max-width: 781px ) {
+	body.admin-bar .spoken-word--active {
+		top: calc( 0.5em + 46px );
+	}
 }
 
 .spoken-word-playback-controls {
