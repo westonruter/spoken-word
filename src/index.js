@@ -3,7 +3,7 @@ import Speech from './speech';
 export { setLocaleData } from './i18n';
 
 /**
- *
+ * Speech instances.
  *
  * @var {Speech[]}
  */
@@ -44,6 +44,7 @@ function findContentRoots( root, selector ) {
 export function init( {
 	rootElement,
 	speechContentSelector = CONTENT_SELECTOR,
+	useDashicons,
 	chunkifyOptions,
 	defaultRate = 1.0, // @todo The options should really be stored globally, not just on a given site.
 	defaultPitch = 1.0,
@@ -66,6 +67,7 @@ export function init( {
 					defaultRate,
 					defaultPitch,
 					defaultVoicePrefs,
+					useDashicons,
 				} );
 				speeches.push( speech );
 

@@ -24,8 +24,10 @@ const VERSION = '0.1.0';
  * @since 0.1.0
  */
 function enqueue_scripts() {
-	$handle = 'spoken-word';
 	wp_enqueue_style( 'dashicons' );
+	wp_enqueue_style( 'spoken-word', plugin_dir_url( __FILE__ ) . 'css/style.css' ); // @todo
+
+	$handle = 'spoken-word';
 	$src = plugin_dir_url( __FILE__ ) . 'dist/app.js';
 	$deps = array();
 	$in_footer = true;
@@ -41,11 +43,10 @@ function enqueue_scripts() {
 	// Initialize.
 	$exports = array(
 		'contentSelector' => '.hentry .entry-content, .h-entry .e-content, [itemprop="articleBody"]',
-		'useDashicons' => \wp_style_is( 'dashicons', 'enqueued' ),
+		'useDashicons' => true,
 	);
 	wp_add_inline_script( $handle, sprintf( 'spokenWord.init( %s );', wp_json_encode( $exports ) ), 'after' );
 
-	wp_enqueue_style( $handle, plugin_dir_url( __FILE__ ) . 'css/style.css' ); // @todo
 }
 add_action( 'wp_enqueue_scripts', __NAMESPACE__ . '\enqueue_scripts' );
 

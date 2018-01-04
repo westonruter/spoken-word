@@ -45,13 +45,14 @@ export default class Speech {
 		defaultVoicePrefs = [], // @todo Combine this and the following two into Speech options.
 		defaultRate = 1.0,
 		defaultPitch = 1.0,
+		useDashicons = false,
 		chunkifyOptions,
 		pauseDurations = DEFAULT_PAUSE_DURATIONS,
 	} ) {
 		this.rootElement = rootElement;
 		this.chunkifyOptions = chunkifyOptions;
+		this.useDashicons = useDashicons;
 		this.controlsElement = null;
-		this.controlButtons = {};
 		this.currentUtterance = null;
 
 		this.state = {
@@ -182,6 +183,7 @@ export default class Speech {
 			stop: this.stop.bind( this ),
 			next: this.next.bind( this ),
 			previous: this.previous.bind( this ),
+			useDashicons: this.useDashicons,
 		};
 		render( <PlaybackControls { ...props } />, this.controlsElement );
 	}
@@ -425,7 +427,7 @@ export default class Speech {
 		const chunkSelection = this.getChunkPositionFromRange();
 		if ( chunkSelection ) {
 			Object.assign( props, chunkSelection );
-		} else if ( this.state.chunkIndex + 1 === this.chunks.length ) {
+		} else if ( this.state.chunkIndex + 1 === this.chunks.length ) { // @todo This needs to also account for chunkRangeOffset.
 			props.chunkIndex = 0;
 			props.chunkRangeOffset = 0;
 		}
