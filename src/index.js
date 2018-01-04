@@ -51,8 +51,8 @@ export function init( {
 	defaultVoicePrefs,
 } = {} ) {
 	return new Promise( ( resolve ) => {
-		const element = rootElement || document.body;
 		const uponReady = () => {
+			const element = rootElement || document.body;
 			const speechRoots = findContentRoots( element, speechContentSelector );
 
 			// Probably a bug in Chrome that utterance is not canceled upon unload.
@@ -87,7 +87,7 @@ export function init( {
 			resolve();
 		};
 
-		if ( 'complete' === document.readyState || 'interactive' === document.readyState ) {
+		if ( 'complete' === document.readyState ) {
 			uponReady();
 		} else {
 			document.addEventListener( 'DOMContentLoaded', uponReady );
