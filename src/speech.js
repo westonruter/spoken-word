@@ -166,11 +166,7 @@ export default class Speech {
 		};
 
 		this.on( 'change:containsSelection', ( selected ) => {
-			if ( selected ) {
-				this.controlsElement.classList.add( 'spoken-word--active' );
-			} else {
-				this.controlsElement.classList.remove( 'spoken-word--active' );
-			}
+			this.controlsElement.classList.toggle( 'spoken-word--active', selected );
 		} );
 
 		this.on( 'change:chunkIndex', handleChunkChange );
@@ -338,19 +334,23 @@ export default class Speech {
 
 				selection.removeAllRanges();
 
-				// Handle hyphenated words and words preceded by punctuation.
 				const startOffset = event.charIndex - previousSpokenNodesLength + firstNodeOffset;
-				const currentToken = event.currentTarget.text.substr( event.charIndex ).replace( /(\W*\w+)\W.*/, '$1' ); // @todo ñ not matching?
 
-				// @todo The token may span text nodes! If currentToken.length > currentTextNode.length then we have to start looping over nextNodes until we have enough nodes to select.
-				// Select the token if it contains a speakable character.
-				if ( /\w/.test( currentToken ) ) {
-					range.setStart( currentTextNode, startOffset );
-					range.setEnd( currentTextNode, Math.min( startOffset + currentToken.length, currentTextNode.length ) );
-					this.playbackAddedRange = range;
-					selection.addRange( range );
-					currentTextNode.parentElement.scrollIntoView( { behavior: 'smooth' } );
-				}
+				// This could be improved to better exclude punctuation, but this is very engine- and language-dependent.
+				const currentToken = event.currentTarget.text.substr( event.charIndex ).replace( /\s.+/, '' );
+
+				/*
+				 * Note: The token may span text nodes. If currentToken.length > currentTextNode.length then we have to
+				 * eventually start looping over nextNodes until we have enough nodes to select. It would be unusual
+				 * for a text node to be split in the middle of the word, so this is not currently accounted for.
+				 */
+				range.setStart( currentTextNode, startOffset );
+				range.setEnd( currentTextNode, Math.min( startOffset + currentToken.length, currentTextNode.length ) );
+				this.playbackAddedRange = range;
+				selection.addRange( range );
+
+				// Keep the element scrolled into view.
+				currentTextNode.parentElement.scrollIntoView( { behavior: 'smooth' } );
 			};
 
 			/**
