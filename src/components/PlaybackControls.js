@@ -66,12 +66,23 @@ export default class PlaybackControls extends Component {
 			return null;
 		}
 
+		const updateLanguageVoice = ( event ) => {
+			const languageVoices = Object.assign(
+				{},
+				this.props.languageVoices,
+				{
+					[ event.target.dataset.language ]: event.target.value,
+				}
+			);
+			this.props.setProps( { languageVoices } );
+		};
+
 		const selects = [];
 		for ( const presentLanguage of this.props.presentLanguages ) {
-			const languageVoices = this.props.availableVoices.filter(
+			const voicesInLanguage = this.props.availableVoices.filter(
 				( voice ) => voice.lang.startsWith( presentLanguage )
 			);
-			if ( 0 === languageVoices.length ) {
+			if ( 0 === voicesInLanguage.length ) {
 				continue;
 			}
 
@@ -80,13 +91,17 @@ export default class PlaybackControls extends Component {
 					{ sprintf( __( 'Voice (%s):' ), presentLanguage ) }
 					{ ' ' }
 					{
-						<select>
-							{ languageVoices.map(
+						<select
+							data-language={ presentLanguage }
+							value={ this.props.languageVoices[ presentLanguage ] }
+							onBlur={ updateLanguageVoice }
+						>
+							{ voicesInLanguage.map(
 								( voice ) =>
 									<option key={ voice.voiceURI } value={ voice.voiceURI }>
-										{ voice.lang === voice.fullLang ?
-											voice.name :
-											sprintf( __( '%s (%s)' ), voice.name, voice.fullLang ) }
+										{ voice.lang.includes( '-' ) ?
+											sprintf( __( '%s (%s)' ), voice.name, voice.lang ) :
+											voice.name }
 									</option>
 							) }
 						</select>
@@ -168,6 +183,7 @@ PlaybackControls.propTypes = {
 	useDashicons: PropTypes.bool,
 	presentLanguages: PropTypes.array.isRequired,
 	availableVoices: PropTypes.array.isRequired,
+	languageVoices: PropTypes.object.isRequired,
 	setProps: PropTypes.func.isRequired,
 };
 

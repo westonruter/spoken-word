@@ -98,6 +98,7 @@ export default class Speech {
 			playback: 'stopped',
 			chunkIndex: 0, // Which chunk is playing.
 			chunkRangeOffset: 0, // Which character inside the chunk's nodes was last spoken.
+			languageVoices: {},
 			voices: defaultUtteranceOptions.voices,
 			rate: defaultUtteranceOptions.rate,
 			pitch: defaultUtteranceOptions.pitch,
@@ -223,6 +224,39 @@ export default class Speech {
 	}
 
 	/**
+	 * Get available voices.
+	 *
+	 * @returns {SpeechSynthesisVoice[]} Local voices sorted by name.
+	 */
+	getAvailableVoices() {
+		const availableVoices = voices.list.filter( ( voice ) => voice.localService );
+		availableVoices.sort( ( a, b ) => {
+			if ( a.name === b.name ) {
+				return 0;
+			}
+			return a.name < b.name ? -1 : 1;
+		} );
+		return availableVoices;
+	}
+
+	/**
+	 * Get voice for each language.
+	 *
+	 * @return {Object<string, string>} Mapping of language to voiceURI.
+	 */
+	getLanguageVoices() {
+		const languageVoices = {};
+		for ( const voice of this.getAvailableVoices() ) {
+			const lang = voice.lang.replace( /-.*/, '' );
+			if ( voice.default || ! ( lang in languageVoices ) ) {
+				languageVoices[ lang ] = voice.voiceURI;
+			}
+		}
+		Object.assign( languageVoices, this.state.languageVoices );
+		return languageVoices;
+	}
+
+	/**
 	 * Render controls.
 	 */
 	renderControls() {
@@ -230,22 +264,6 @@ export default class Speech {
 		const presentLanguages = Object.keys( weightedLanguages );
 		presentLanguages.sort( ( a, b ) => {
 			return weightedLanguages[ b ] - weightedLanguages[ a ];
-		} );
-
-		const availableVoices = voices.list.filter( ( voice ) => voice.localService ).map( ( voice ) => (
-			{
-				voiceURI: voice.voiceURI,
-				name: voice.name,
-				lang: voice.lang.replace( /-.*/, '' ),
-				fullLang: voice.lang,
-				default: voice.default, // @todo Replace with selected.
-			}
-		) );
-		availableVoices.sort( ( a, b ) => {
-			if ( a.name === b.name ) {
-				return 0;
-			}
-			return a.name < b.name ? -1 : 1;
 		} );
 
 		const props = Object.assign(
@@ -263,7 +281,8 @@ export default class Speech {
 					}
 				},
 				presentLanguages,
-				availableVoices,
+				availableVoices: this.getAvailableVoices(),
+				languageVoices: this.getLanguageVoices(),
 				setProps: ( props ) => {
 					this.setState( props );
 				}
