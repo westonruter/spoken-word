@@ -264,6 +264,9 @@ export default class Speech {
 				},
 				presentLanguages,
 				availableVoices,
+				setProps: ( props ) => {
+					this.setState( props );
+				}
 			},
 		);
 		render( <PlaybackControls { ...props } />, this.controlsElement );

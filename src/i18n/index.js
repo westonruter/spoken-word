@@ -97,6 +97,6 @@ export function _nx( single, plural, number, context ) {
  *
  * @see http://www.diveintojavascript.com/projects/javascript-sprintf
  *
- * @type {string}
+ * @type {Function}
  */
 export const sprintf = Jed.sprintf;

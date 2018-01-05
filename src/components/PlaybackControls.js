@@ -1,5 +1,5 @@
 
-import { __, _n, sprintf } from '../i18n';
+import { __, sprintf } from '../i18n';
 import React, { Component } from 'preact-compat';
 import PropTypes from 'prop-types';
 import PlaybackButton from './PlaybackButton';
@@ -40,6 +40,9 @@ export default class PlaybackControls extends Component {
 		this.setState( { dialogOpen: false } );
 	}
 
+	/**
+	 * Update dialog state.
+	 */
 	updateDialogState() {
 		if ( ! this.state.dialogOpen && this.dialog.open ) {
 			this.dialog.close();
@@ -53,6 +56,11 @@ export default class PlaybackControls extends Component {
 		}
 	}
 
+	/**
+	 * Render language voice select dropdowns.
+	 *
+	 * @return {VNode[]|null} Elements or null if no available voices or no present languages.
+	 */
 	renderLanguageVoiceSelects() {
 		if ( 0 === this.props.availableVoices.length || 0 === this.props.presentLanguages.length ) {
 			return null;
@@ -60,7 +68,9 @@ export default class PlaybackControls extends Component {
 
 		const selects = [];
 		for ( const presentLanguage of this.props.presentLanguages ) {
-			const languageVoices = this.props.availableVoices.filter( ( voice ) => voice.lang.startsWith( presentLanguage ) );
+			const languageVoices = this.props.availableVoices.filter(
+				( voice ) => voice.lang.startsWith( presentLanguage )
+			);
 			if ( 0 === languageVoices.length ) {
 				continue;
 			}
@@ -68,6 +78,7 @@ export default class PlaybackControls extends Component {
 			selects.push(
 				<p key={ presentLanguage }>
 					{ sprintf( __( 'Voice (%s):' ), presentLanguage ) }
+					{ ' ' }
 					{
 						<select>
 							{ languageVoices.map(
@@ -83,9 +94,15 @@ export default class PlaybackControls extends Component {
 				</p>
 			);
 		}
+
 		return selects;
 	}
 
+	/**
+	 * Render.
+	 *
+	 * @return {VNode} Element.
+	 */
 	render() {
 		const saveDialogRef = ( dialog ) => {
 			this.dialog = dialog;
@@ -113,11 +130,25 @@ export default class PlaybackControls extends Component {
 				<dialog ref={ saveDialogRef }>
 					<p>
 						<label htmlFor={ this.idPrefix + 'rate' }>{ __( 'Rate:' ) }</label>
-						<input id={ this.idPrefix + 'rate' } type="number" defaultValue={1.0} step={0.1} />
+						{ ' ' }
+						<input
+							id={ this.idPrefix + 'rate' }
+							type="number"
+							value={ this.props.rate }
+							step={ 0.1 }
+							onChange={ ( event ) => this.props.setProps( { rate: event.target.valueAsNumber } ) }
+						/>
 					</p>
 					<p>
 						<label htmlFor={ this.idPrefix + 'pitch' }>{ __( 'Pitch:' ) }</label>
-						<input id={ this.idPrefix + 'pitch' } type="number" defaultValue={1.0} step={0.1} />
+						{ ' ' }
+						<input
+							id={ this.idPrefix + 'pitch' }
+							type="number"
+							value={ this.props.pitch }
+							step={ 0.1 }
+							onChange={ ( event ) => this.props.setProps( { pitch: event.target.valueAsNumber } ) }
+						/>
 					</p>
 					{ this.renderLanguageVoiceSelects() }
 					<button onClick={ this.hideDialog }>{ __( 'Close' ) }</button>
@@ -137,6 +168,7 @@ PlaybackControls.propTypes = {
 	useDashicons: PropTypes.bool,
 	presentLanguages: PropTypes.array.isRequired,
 	availableVoices: PropTypes.array.isRequired,
+	setProps: PropTypes.func.isRequired,
 };
 
 PlaybackControls.defaultProps = {
