@@ -3,6 +3,13 @@ import Speech from './speech';
 export { setLocaleData } from './i18n';
 
 /**
+ * Mapping speech root elements to their corresponding Speech instances.
+ *
+ * @type {WeakMap<Element, Speech>}
+ */
+const speechRootMap = new WeakMap();
+
+/**
  * Speech instances.
  *
  * @var {Speech[]}
@@ -11,6 +18,11 @@ export const speeches = [];
 
 // @todo Add WeakMap
 
+/**
+ * CSS selector for finding the content element.
+ *
+ * @type {string}
+ */
 const CONTENT_SELECTOR = '.hentry .entry-content, .h-entry .e-content, [itemprop="articleBody"]';
 
 /**
@@ -30,20 +42,75 @@ function findContentRoots( root, selector ) {
 }
 
 /**
+ * Create Speech instances.
+ *
+ * @param {Element} element         - Element to look for content.
+ * @param {string}  contentSelector - Selector for content elements.
+ * @param {object}  chunkifyOptions - Options passed to chunkify().
+ * @param {bool}    useDashicons    - Whether to use Dashicons in playback controls.
+ * @param {object}  defaultUtteranceOptions - Options for utterance. (Deprecated.)
+ */
+function createSpeeches( { element, contentSelector, chunkifyOptions, useDashicons, defaultUtteranceOptions } ) {
+	const rootElements = findContentRoots( element, contentSelector );
+	for ( const rootElement of rootElements ) {
+		const speech = new Speech( {
+			rootElement,
+			chunkifyOptions,
+			useDashicons,
+			defaultUtteranceOptions,
+		} );
+
+		// Skip elements already added.
+		if ( speechRootMap.has( rootElement ) ) {
+			continue;
+		}
+
+		speeches.push( speech );
+		speechRootMap.set( rootElement, speech );
+
+		// Stop playing all other speeches when playing one.
+		speech.on( 'change:playback:playing', () => {
+			for ( const otherSpeech of speeches ) {
+				if ( otherSpeech !== speech ) {
+					otherSpeech.stop();
+				}
+			}
+		} );
+
+		speech.initialize();
+	}
+}
+
+/**
+ * Destroy Speech instances in element.
+ *
+ * @param {Element} element         - Element to look for content.
+ * @param {string}  contentSelector - Selector for content elements.
+ */
+function destroySpeeches( { element, contentSelector } ) {
+	const speechRoots = findContentRoots( element, contentSelector );
+	for ( const rootElement of speechRoots ) {
+		const speech = speechRootMap.get( rootElement );
+		if ( speech ) {
+			speech.destroy();
+			speechRootMap.delete( rootElement );
+		}
+	}
+}
+
+/**
  * Initialize.
  *
- * @todo Params for patch, rate, voices.
- * @param {Object} options - Options.
- * @param {string} options.speechContentSelector - CSS Selector to find the elements for speaking.
- * @param {Object} options.chunkifyOptions       - Options passed into chunkify.
- * @param {number} options.defaultRate           - Default rate.
- * @param {number} options.defaultPitch          - Default pitch.
- * @param {Array}  options.defaultVoicePrefs     - Default voice preferences.
+ * @param {Element} rootElement             - Root element.
+ * @param {string}  contentSelector         - CSS Selector to find the elements for speaking.
+ * @param {Object}  chunkifyOptions         - Options passed into chunkify.
+ * @param {boolean} useDashicons            - Whether to use Dashicons.
+ * @param {Object}  defaultUtteranceOptions - Options passed into chunkify.
  * @returns {Promise} Promise.
  */
-export function init( {
+export function initialize( {
 	rootElement,
-	speechContentSelector = CONTENT_SELECTOR,
+	contentSelector = CONTENT_SELECTOR,
 	useDashicons,
 	chunkifyOptions,
 	defaultRate = 1.0, // @todo The options should really be stored globally, not just on a given site.
@@ -51,39 +118,47 @@ export function init( {
 	defaultVoicePrefs,
 } = {} ) {
 	return new Promise( ( resolve ) => {
+		const mutationObserver = new MutationObserver( ( mutations ) => {
+			for ( const mutation of mutations ) {
+				for ( const addedNode of mutation.addedNodes ) {
+					createSpeeches( {
+						element: addedNode,
+						contentSelector,
+						useDashicons,
+						chunkifyOptions,
+						defaultUtteranceOptions,
+					} );
+				}
+				for ( const removedNode of mutation.removedNodes ) {
+					destroySpeeches( {
+						element: removedNode,
+						contentSelector,
+					} );
+				}
+			}
+		} );
+
 		const uponReady = () => {
 			const element = rootElement || document.body;
-			const speechRoots = findContentRoots( element, speechContentSelector );
 
 			// Probably a bug in Chrome that utterance is not canceled upon unload.
 			window.addEventListener( 'unload', () => {
 				speechSynthesis.cancel();
 			} );
 
-			for ( const speechRoot of speechRoots ) {
-				const speech = new Speech( {
-					rootElement: speechRoot,
-					chunkifyOptions,
-					defaultRate,
-					defaultPitch,
-					defaultVoicePrefs,
-					useDashicons,
-				} );
-				speeches.push( speech );
+			createSpeeches( {
+				element,
+				contentSelector,
+				chunkifyOptions,
+				useDashicons,
+				defaultUtteranceOptions,
+			} );
 
-				// Stop playing all other speeches when playing one.
-				speech.on( 'change:playback:playing', () => {
-					for ( const otherSpeech of speeches ) {
-						if ( otherSpeech !== speech ) {
-							otherSpeech.stop(); // @todo Warning: This may end up stopping this from playing. We can start playback after 100ms.
-						}
-					}
-				} );
+			mutationObserver.observe( element, {
+				childList: true,
+				subtree: true,
+			} );
 
-				speech.initialize();
-			}
-
-			// @todo Add mutation observer to add new article roots dynamically.
 			resolve();
 		};
 
@@ -94,5 +169,3 @@ export function init( {
 		}
 	} );
 }
-
-// @todo Identify articles on DOM load and on Mutation Event.

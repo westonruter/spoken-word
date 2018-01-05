@@ -1,12 +1,16 @@
 
 import React, { render, unmountComponentAtNode } from 'preact-compat';
 import EventEmitter from 'event-emitter';
-
 import chunkify from './chunkify';
 import * as voices from './voices';
 import { equalRanges } from './helpers';
 import PlaybackControls from './components/PlaybackControls';
 
+/**
+ * ASCII code for ESC.
+ *
+ * @type {number}
+ */
 const ESCAPE_KEY_CODE = 27;
 
 /**
@@ -18,12 +22,38 @@ const ESCAPE_KEY_CODE = 27;
  * @property {Element} root     - Container element, not necessarily the parent.
  */
 
+/**
+ * CSS selector for headings.
+ *
+ * @type {string}
+ */
 const HEADING_SELECTOR = 'h1, h2, h3, h4, h5, h6';
+
+/**
+ * CSS selector for which elements should get paragraph pauses.
+ *
+ * @type {string}
+ */
 const PARAGRAPH_PAUSE_SELECTOR = 'blockquote, p, dt';
+
+/**
+ * Pauses (in milliseconds) where the TTS engine should pause between speaking chunks.
+ *
+ * @type {object}
+ */
 const DEFAULT_PAUSE_DURATIONS = {
 	heading: 1000,
 	paragraph: 500,
 };
+
+/**
+ * Number of characters within which an offset is considered to be at the beginning of a chunk.
+ *
+ * If previous() is called when the offset is less than this number, then the previous chunk will be navigated to.
+ * Otherwise, the offset will be set to zero to move the cursor to the beginning of the current chunk.
+ *
+ * @type {number}
+ */
 const CHUNK_BEGINNING_OFFSET_THRESHOLD = 10;
 
 /**
@@ -35,13 +65,12 @@ export default class Speech {
 	/**
 	 * Construct.
 	 *
-	 * @param {Object}  args                   - Args.
-	 * @param {Element} args.rootElement       - Element.
-	 * @param {Array}   args.defaultVoicePrefs - Ordered list of preferred voices.
-	 * @param {number}  args.defaultRate       - Default rate.
-	 * @param {number}  args.defaultPitch      - Default pitch.
-	 * @param {Object}  args.chunkifyOptions   - Chunkify options.
-	 * @param {Object}  args.pauseDurations    - Pause durations.
+	 * @param {Object}  args                         - Args.
+	 * @param {Element} args.rootElement             - Element.
+	 * @param {Object}  args.defaultUtteranceOptions - Default utterance options.
+	 * @param {Object}  args.chunkifyOptions         - Chunkify options.
+	 * @param {Object}  args.pauseDurations          - Pause durations.
+	 * @param {boolean} args.useDashicons=false      - Whether to use Dashicons (as opposed to Emoji).
 	 */
 	constructor( {
 		rootElement,
@@ -68,21 +97,16 @@ export default class Speech {
 			playback: 'stopped',
 			chunkIndex: 0, // Which chunk is playing.
 			chunkRangeOffset: 0, // Which character inside the chunk's nodes was last spoken.
-			voice: '', // @todo Change this to voices, mapping language to voiceURI.
-			rate: 1.0,
-			pitch: 1.0,
+			voices: defaultUtteranceOptions.voices,
+			rate: defaultUtteranceOptions.rate,
+			pitch: defaultUtteranceOptions.pitch,
 		};
-
-		this.pauseDurations = pauseDurations;
-		this.defaultVoicePrefs = defaultVoicePrefs;
-		this.defaultRate = defaultRate;
-		this.defaultPitch = defaultPitch;
-
-		// @todo Translation strings.
 	}
 
 	/**
 	 * Initialize.
+	 *
+	 * See destroy method for inverse.
 	 */
 	initialize() {
 		this.chunkify();
@@ -96,7 +120,6 @@ export default class Speech {
 		this.renderControls();
 
 		// @todo Add mutationObserver for this element to call this.chunkify() again.
-		// @todo Add mutation observer to destroy once this.rootElement is removed.
 	}
 
 	/**
@@ -588,7 +611,6 @@ export default class Speech {
 		document.removeEventListener( 'selectionchange', this.updateContainsSelectionState );
 		document.removeEventListener( 'keydown', this.handleEscapeKeydown );
 		unmountComponentAtNode( this.controlsElement );
-		// @todo Tear down mutation observer.
 	}
 }
 

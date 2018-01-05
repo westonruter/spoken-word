@@ -45,7 +45,7 @@ function enqueue_scripts() {
 		'contentSelector' => '.hentry .entry-content, .h-entry .e-content, [itemprop="articleBody"]',
 		'useDashicons' => true,
 	);
-	wp_add_inline_script( $handle, sprintf( 'spokenWord.init( %s );', wp_json_encode( $exports ) ), 'after' );
+	wp_add_inline_script( $handle, sprintf( 'spokenWord.initialize( %s );', wp_json_encode( $exports ) ), 'after' );
 
 }
 add_action( 'wp_enqueue_scripts', __NAMESPACE__ . '\enqueue_scripts' );
