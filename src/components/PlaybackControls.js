@@ -95,6 +95,7 @@ export default class PlaybackControls extends Component {
 							data-language={ presentLanguage }
 							value={ this.props.languageVoices[ presentLanguage ] }
 							onBlur={ updateLanguageVoice }
+							onChange={ updateLanguageVoice }
 						>
 							{ voicesInLanguage.map(
 								( voice ) =>
@@ -142,7 +143,7 @@ export default class PlaybackControls extends Component {
 				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="controls-forward" emoji="⏩" label={ __( 'Forward' ) } onClick={ this.props.next } />
 				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="admin-settings" emoji="⚙" label={ __( 'Settings' ) } onClick={ this.showDialog } />
 
-				<dialog ref={ saveDialogRef }>
+				<dialog className="spoken-word-playback-controls__dialog" ref={ saveDialogRef }>
 					<p>
 						<label htmlFor={ this.idPrefix + 'rate' }>{ __( 'Rate:' ) }</label>
 						{ ' ' }

@@ -5,6 +5,7 @@ import chunkify, { getWeightedChunkLanguages } from './chunkify';
 import * as voices from './voices';
 import { equalRanges } from './helpers';
 import PlaybackControls from './components/PlaybackControls';
+import isEqual from 'lodash/isEqual';
 
 /**
  * ASCII code for ESC.
@@ -74,10 +75,8 @@ export default class Speech {
 	 */
 	constructor( {
 		rootElement,
-		defaultVoicePrefs = [], // @todo Combine this and the following two into Speech options.
-		defaultRate = 1.0,
-		defaultPitch = 1.0,
 		useDashicons = false,
+		defaultUtteranceOptions,
 		chunkifyOptions,
 		pauseDurations = DEFAULT_PAUSE_DURATIONS,
 	} ) {
@@ -140,7 +139,7 @@ export default class Speech {
 		let changeCount = 0;
 
 		for ( const key of Object.keys( props ) ) {
-			if ( newProps[ key ] === oldProps[ key ] ) {
+			if ( isEqual( newProps[ key ], oldProps[ key ] ) ) {
 				continue;
 			}
 
@@ -201,6 +200,16 @@ export default class Speech {
 
 		this.on( 'change:chunkIndex', handleChunkChange );
 		this.on( 'change:chunkRangeOffset', handleChunkChange );
+
+		const handleVoicePropChangeDuringPlayback = () => {
+			if ( 'playing' === this.state.playback ) {
+				this.voicePropChanged = true; // Prevent playback from stopping onend.
+				this.startPlayingCurrentChunkAndQueueNext();
+			}
+		};
+		this.on( 'change:languageVoices', handleVoicePropChangeDuringPlayback );
+		this.on( 'change:rate', handleVoicePropChangeDuringPlayback );
+		this.on( 'change:pitch', handleVoicePropChangeDuringPlayback );
 	}
 
 	/**
@@ -229,6 +238,9 @@ export default class Speech {
 	 * @returns {SpeechSynthesisVoice[]} Local voices sorted by name.
 	 */
 	getAvailableVoices() {
+		if ( this._availableVoices && this._availableVoices.length > 0 ) {
+			return this._availableVoices;
+		}
 		const availableVoices = voices.list.filter( ( voice ) => voice.localService );
 		availableVoices.sort( ( a, b ) => {
 			if ( a.name === b.name ) {
@@ -236,6 +248,7 @@ export default class Speech {
 			}
 			return a.name < b.name ? -1 : 1;
 		} );
+		this._availableVoices = availableVoices;
 		return availableVoices;
 	}
 
@@ -300,8 +313,8 @@ export default class Speech {
 	 */
 	getUtteranceOptions( chunk ) {
 		const props = {
-			pitch: this.defaultPitch,
-			rate: this.defaultRate,
+			pitch: this.state.pitch,
+			rate: this.state.rate,
 		};
 		if ( chunk.language ) {
 			props.voice = this.getVoice( chunk );
@@ -317,32 +330,11 @@ export default class Speech {
 	 * @return {SpeechSynthesisVoice|null} Voice.
 	 */
 	getVoice( chunk ) {
+		const languageVoices = this.getLanguageVoices();
 		const baseLanguage = chunk.language.replace( /-.*/, '' ).toLowerCase();
-		const localVoices = speechSynthesis.getVoices().filter( ( voice ) => voice.localService );
-		if ( localVoices.length === 0 ) {
-			return null;
-		}
-		const languageVoices = localVoices.filter( ( voice ) => voice.lang.toLowerCase().startsWith( baseLanguage ) );
-		const defaultVoice = localVoices.find( ( voice ) => voice.default );
-		if ( defaultVoice && defaultVoice.lang.toLowerCase().startsWith( baseLanguage ) ) {
-			return defaultVoice;
-		}
-
-		const sameLanguageBaseVoices = [];
-		const identicalLanguageVoices = [];
-		for ( const voice of languageVoices ) {
-			if ( voice.lang.toLowerCase() === chunk.language ) {
-				identicalLanguageVoices.push( voice );
-			} else if ( voice.lang.startsWith( baseLanguage ) ) {
-				sameLanguageBaseVoices.push( voice );
-			}
-		}
-		if ( identicalLanguageVoices.length > 0 ) {
-			return identicalLanguageVoices[ 0 ];
-		} else if ( sameLanguageBaseVoices.length > 0 ) {
-			return sameLanguageBaseVoices[ 0 ];
-		}
-		return null;
+		return speechSynthesis.getVoices().find(
+			( voice ) => voice.voiceURI === languageVoices[ baseLanguage ]
+		);
 	}
 
 	/**
@@ -439,6 +431,12 @@ export default class Speech {
 			this.currentUtterance.onend = () => {
 				this.currentUtterance = null;
 				selection.removeAllRanges();
+
+				if ( this.voicePropChanged ) {
+					this.voicePropChanged = false;
+					reject( 'voice_prop_changed' );
+					return;
+				}
 
 				if ( this.state.chunkIndex !== chunkIndex ) {
 					reject( 'chunk_change' );

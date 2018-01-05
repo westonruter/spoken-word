@@ -47,3 +47,6 @@
 .spoken-word-playback-controls__button--emoji {
 	font-family: "Apple Color Emoji", "Segoe UI Emoji", "NotoColorEmoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
 }
+.spoken-word-playback-controls__dialog {
+	position: fixed;
+}

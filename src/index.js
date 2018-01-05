@@ -16,7 +16,16 @@ const speechRootMap = new WeakMap();
  */
 export const speeches = [];
 
-// @todo Add WeakMap
+/**
+ * Default utterance options.
+ *
+ * @type {{pitch: number, rate: number, languageVoices: Object<string, string>}}
+ */
+const DEFAULT_UTTERANCE_OPTIONS = {
+	pitch: 1.0,
+	rate: 1.0,
+	languageVoices: {},
+};
 
 /**
  * CSS selector for finding the content element.
@@ -113,9 +122,7 @@ export function initialize( {
 	contentSelector = CONTENT_SELECTOR,
 	useDashicons,
 	chunkifyOptions,
-	defaultRate = 1.0, // @todo The options should really be stored globally, not just on a given site.
-	defaultPitch = 1.0,
-	defaultVoicePrefs,
+	defaultUtteranceOptions = DEFAULT_UTTERANCE_OPTIONS,
 } = {} ) {
 	const mutationObserver = new MutationObserver( ( mutations ) => {
 		for ( const mutation of mutations ) {

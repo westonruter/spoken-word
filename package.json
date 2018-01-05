@@ -40,6 +40,7 @@
     "babel-preset-react": "^6.24.1",
     "event-emitter": "^0.3.5",
     "jed": "^1.1.1",
+    "lodash": "^4.17.4",
     "preact": "^8.2.7",
     "preact-compat": "^3.17.0",
     "prop-types": "^15.6.0"
