@@ -7,6 +7,8 @@ import * as voices from './voices';
 import { equalRanges } from './helpers';
 import PlaybackControls from './components/PlaybackControls';
 
+const ESCAPE_KEY_CODE = 27;
+
 /**
  * A segment of text nodes that are to be read by the TTS engine.
  *
@@ -56,7 +58,7 @@ export default class Speech {
 		this.controlsElement = null;
 		this.currentUtterance = null;
 
-		for ( const method of [ 'play', 'stop', 'next', 'previous', 'updateContainsSelectionState' ] ) {
+		for ( const method of [ 'play', 'stop', 'next', 'previous', 'updateContainsSelectionState', 'handleEscapeKeydown' ] ) {
 			this[ method ] = this[ method ].bind( this );
 		}
 
@@ -89,6 +91,7 @@ export default class Speech {
 
 		// @todo Also if focus removed from container?
 		document.addEventListener( 'selectionchange', this.updateContainsSelectionState );
+		document.addEventListener( 'keydown', this.handleEscapeKeydown );
 
 		this.renderControls();
 
@@ -442,6 +445,17 @@ export default class Speech {
 	}
 
 	/**
+	 * Handle keydown event for Escape key press to stop playback.
+	 *
+	 * @param {Event} event - The keydown event.
+	 */
+	handleEscapeKeydown( event ) {
+		if ( 'playing' === this.state.playback && ESCAPE_KEY_CODE === event.which ) {
+			this.stop();
+		}
+	}
+
+	/**
 	 * Play content.
 	 *
 	 * @returns {void}
@@ -571,7 +585,8 @@ export default class Speech {
 		if ( 'playing' === this.state.playback ) {
 			speechSynthesis.cancel();
 		}
-		document.removeEventListener( 'selectionchange', this.controlsElement );
+		document.removeEventListener( 'selectionchange', this.updateContainsSelectionState );
+		document.removeEventListener( 'keydown', this.handleEscapeKeydown );
 		unmountComponentAtNode( this.controlsElement );
 		// @todo Tear down mutation observer.
 	}
