@@ -93,6 +93,7 @@ export default class Speech {
 
 		this.state = {
 			containsSelection: false,
+			settingsShown: false,
 			speakTimeoutId: 0,
 			playback: 'stopped',
 			chunkIndex: 0, // Which chunk is playing.
@@ -201,6 +202,13 @@ export default class Speech {
 		this.on( 'change:chunkIndex', handleChunkChange );
 		this.on( 'change:chunkRangeOffset', handleChunkChange );
 
+		// Make sure voices get loaded when the settings are shown.
+		this.on( 'change:settingsShown', ( isVisible ) => {
+			if ( isVisible && ! voices.isLoaded() ) {
+				voices.load().then( this.renderControls );
+			}
+		} );
+
 		const handleVoicePropChangeDuringPlayback = () => {
 			if ( 'playing' === this.state.playback ) {
 				this.voicePropChanged = true; // Prevent playback from stopping onend.
@@ -289,9 +297,10 @@ export default class Speech {
 				previous: this.previous,
 				useDashicons: this.useDashicons,
 				onShowSettings: () => {
-					if ( ! voices.isLoaded() ) {
-						voices.load().then( this.renderControls );
-					}
+					this.setState( { settingsShown: true } );
+				},
+				onHideSettings: () => {
+					this.setState( { settingsShown: false } );
 				},
 				presentLanguages,
 				availableVoices: this.getAvailableVoices(),
@@ -399,30 +408,32 @@ export default class Speech {
 					{ suppressEvents: true }
 				);
 
+				// Keep the element scrolled into view.
+				currentTextNode.parentElement.scrollIntoView( { behavior: 'smooth' } );
+
 				while ( nextNodes.length && event.charIndex + firstNodeOffset >= previousSpokenNodesLength + currentTextNode.length ) {
 					previousSpokenNodesLength += currentTextNode.length;
 					currentTextNode = nextNodes.shift();
 				}
 
-				selection.removeAllRanges();
+				// Skip highlighting if settings are shown.
+				if ( ! this.state.settingsShown ) {
+					const startOffset = event.charIndex - previousSpokenNodesLength + firstNodeOffset;
 
-				const startOffset = event.charIndex - previousSpokenNodesLength + firstNodeOffset;
+					// This could be improved to better exclude punctuation, but this is very engine- and language-dependent.
+					const currentToken = event.currentTarget.text.substr( event.charIndex ).replace( /\s.+/, '' );
 
-				// This could be improved to better exclude punctuation, but this is very engine- and language-dependent.
-				const currentToken = event.currentTarget.text.substr( event.charIndex ).replace( /\s.+/, '' );
-
-				/*
-				 * Note: The token may span text nodes. If currentToken.length > currentTextNode.length then we have to
-				 * eventually start looping over nextNodes until we have enough nodes to select. It would be unusual
-				 * for a text node to be split in the middle of the word, so this is not currently accounted for.
-				 */
-				range.setStart( currentTextNode, startOffset );
-				range.setEnd( currentTextNode, Math.min( startOffset + currentToken.length, currentTextNode.length ) );
-				this.playbackAddedRange = range;
-				selection.addRange( range );
-
-				// Keep the element scrolled into view.
-				currentTextNode.parentElement.scrollIntoView( { behavior: 'smooth' } );
+					/*
+					 * Note: The token may span text nodes. If currentToken.length > currentTextNode.length then we have to
+					 * eventually start looping over nextNodes until we have enough nodes to select. It would be unusual
+					 * for a text node to be split in the middle of the word, so this is not currently accounted for.
+					 */
+					selection.removeAllRanges();
+					range.setStart( currentTextNode, startOffset );
+					range.setEnd( currentTextNode, Math.min( startOffset + currentToken.length, currentTextNode.length ) );
+					this.playbackAddedRange = range;
+					selection.addRange( range );
+				}
 			};
 
 			/**
@@ -430,7 +441,9 @@ export default class Speech {
 			 */
 			this.currentUtterance.onend = () => {
 				this.currentUtterance = null;
-				selection.removeAllRanges();
+				if ( ! this.state.settingsShown ) {
+					selection.removeAllRanges();
+				}
 
 				if ( this.voicePropChanged ) {
 					this.voicePropChanged = false;
@@ -520,12 +533,12 @@ export default class Speech {
 	}
 
 	/**
-	 * Handle keydown event for Escape key press to stop playback.
+	 * Handle keydown event for Escape key press to stop playback (unless the settings are shown, as ESC closes them).
 	 *
 	 * @param {Event} event - The keydown event.
 	 */
 	handleEscapeKeydown( event ) {
-		if ( 'playing' === this.state.playback && ESCAPE_KEY_CODE === event.which ) {
+		if ( 'playing' === this.state.playback && ESCAPE_KEY_CODE === event.which && ! this.state.settingsShown ) {
 			this.stop();
 		}
 	}
@@ -601,7 +614,7 @@ export default class Speech {
 						chunkIndex: currentChunk + 1, // This state change will cause startPlayingCurrentChunkAndQueueNext to be called.
 						chunkRangeOffset: 0, // Start at beginning of chunk.
 					} );
-				}, pauseDuration * this.state.rate ),
+				}, Math.round( pauseDuration * ( 1 / this.state.rate ) ) ),
 			} );
 		};
 

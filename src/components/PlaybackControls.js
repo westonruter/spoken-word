@@ -6,16 +6,6 @@ import PlaybackButton from './PlaybackButton';
 import { uniqueId } from '../helpers';
 
 export default class PlaybackControls extends Component {
-	constructor() {
-		super();
-
-		this.showDialog = this.showDialog.bind( this );
-		this.hideDialog = this.hideDialog.bind( this );
-		this.state = {
-			dialogOpen: false,
-		};
-	}
-
 	componentWillMount() {
 		this.idPrefix = `input${ uniqueId() }-`;
 	}
@@ -24,7 +14,7 @@ export default class PlaybackControls extends Component {
 		this.updateDialogState();
 		this.dialog.addEventListener( 'cancel', ( event ) => {
 			event.preventDefault();
-			this.hideDialog();
+			this.props.onHideSettings();
 		} );
 	}
 
@@ -32,27 +22,18 @@ export default class PlaybackControls extends Component {
 		this.updateDialogState();
 	}
 
-	showDialog() {
-		this.setState( { dialogOpen: true } );
-	}
-
-	hideDialog() {
-		this.setState( { dialogOpen: false } );
-	}
-
 	/**
 	 * Update dialog state.
 	 */
 	updateDialogState() {
-		if ( ! this.state.dialogOpen && this.dialog.open ) {
+		if ( ! this.props.settingsShown && this.dialog.open ) {
 			this.dialog.close();
 			if ( this.previousActiveElement ) {
 				this.previousActiveElement.focus();
 			}
-		} else if ( this.state.dialogOpen && ! this.dialog.open ) {
+		} else if ( this.props.settingsShown && ! this.dialog.open ) {
 			this.previousActiveElement = document.activeElement;
 			this.dialog.showModal();
-			this.props.onShowSettings();
 		}
 	}
 
@@ -127,6 +108,15 @@ export default class PlaybackControls extends Component {
 		const classNames = [ 'spoken-word-playback-controls' ];
 		const isPlaying = 'playing' === this.props.playback;
 
+		const handleNumericPropInputChange = ( event ) => {
+			if ( isNaN( event.target.valueAsNumber ) || ! event.target.validity.valid ) {
+				return;
+			}
+			this.props.setProps( {
+				[ event.target.dataset.prop ]: event.target.valueAsNumber
+			} );
+		};
+
 		return (
 			<fieldset className={ classNames.join( ' ' ) }>
 				<legend className="spoken-word-playback-controls__legend">{ __( 'Text to Speech' ) }</legend>
@@ -141,7 +131,7 @@ export default class PlaybackControls extends Component {
 
 				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="controls-back" emoji="⏪" label={ __( 'Previous' ) } onClick={ this.props.previous } />
 				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="controls-forward" emoji="⏩" label={ __( 'Forward' ) } onClick={ this.props.next } />
-				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="admin-settings" emoji="⚙" label={ __( 'Settings' ) } onClick={ this.showDialog } />
+				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="admin-settings" emoji="⚙" label={ __( 'Settings' ) } onClick={ this.props.onShowSettings } />
 
 				<dialog className="spoken-word-playback-controls__dialog" ref={ saveDialogRef }>
 					<p>
@@ -150,9 +140,12 @@ export default class PlaybackControls extends Component {
 						<input
 							id={ this.idPrefix + 'rate' }
 							type="number"
+							data-prop="rate"
 							value={ this.props.rate }
 							step={ 0.1 }
-							onChange={ ( event ) => this.props.setProps( { rate: event.target.valueAsNumber } ) }
+							min={ 0.1 }
+							max={ 10 }
+							onChange={ handleNumericPropInputChange }
 						/>
 					</p>
 					<p>
@@ -161,13 +154,16 @@ export default class PlaybackControls extends Component {
 						<input
 							id={ this.idPrefix + 'pitch' }
 							type="number"
+							data-prop="pitch"
 							value={ this.props.pitch }
+							min={ 0 }
+							max={ 2 }
 							step={ 0.1 }
-							onChange={ ( event ) => this.props.setProps( { pitch: event.target.valueAsNumber } ) }
+							onChange={ handleNumericPropInputChange }
 						/>
 					</p>
 					{ this.renderLanguageVoiceSelects() }
-					<button onClick={ this.hideDialog }>{ __( 'Close' ) }</button>
+					<button onClick={ this.props.onHideSettings }>{ __( 'Close' ) }</button>
 				</dialog>
 			</fieldset>
 		);
@@ -178,10 +174,12 @@ PlaybackControls.propTypes = {
 	playback: PropTypes.string.isRequired,
 	play: PropTypes.func.isRequired,
 	onShowSettings: PropTypes.func.isRequired,
+	onHideSettings: PropTypes.func.isRequired,
 	stop: PropTypes.func.isRequired,
 	previous: PropTypes.func.isRequired,
 	next: PropTypes.func.isRequired,
 	useDashicons: PropTypes.bool,
+	settingsShown: PropTypes.bool,
 	presentLanguages: PropTypes.array.isRequired,
 	availableVoices: PropTypes.array.isRequired,
 	languageVoices: PropTypes.object.isRequired,
