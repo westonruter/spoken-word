@@ -28,7 +28,7 @@ export default class PlaybackControls extends Component {
 	updateDialogState() {
 		if ( ! this.props.settingsShown && this.dialog.open ) {
 			this.dialog.close();
-			if ( this.previousActiveElement ) {
+			if ( this.previousActiveElement && 'playing' !== this.props.playback ) {
 				this.previousActiveElement.focus();
 			}
 		} else if ( this.props.settingsShown && ! this.dialog.open ) {
