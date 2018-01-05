@@ -117,27 +117,27 @@ export function initialize( {
 	defaultPitch = 1.0,
 	defaultVoicePrefs,
 } = {} ) {
-	return new Promise( ( resolve ) => {
-		const mutationObserver = new MutationObserver( ( mutations ) => {
-			for ( const mutation of mutations ) {
-				for ( const addedNode of mutation.addedNodes ) {
-					createSpeeches( {
-						element: addedNode,
-						contentSelector,
-						useDashicons,
-						chunkifyOptions,
-						defaultUtteranceOptions,
-					} );
-				}
-				for ( const removedNode of mutation.removedNodes ) {
-					destroySpeeches( {
-						element: removedNode,
-						contentSelector,
-					} );
-				}
+	const mutationObserver = new MutationObserver( ( mutations ) => {
+		for ( const mutation of mutations ) {
+			for ( const addedNode of [ ...mutation.addedNodes ].filter( ( node ) => node.nodeType === Node.ELEMENT_NODE ) ) {
+				createSpeeches( {
+					element: addedNode,
+					contentSelector,
+					useDashicons,
+					chunkifyOptions,
+					defaultUtteranceOptions,
+				} );
 			}
-		} );
+			for ( const removedNode of [ ...mutation.removedNodes ].filter( ( node ) => node.nodeType === Node.ELEMENT_NODE ) ) {
+				destroySpeeches( {
+					element: removedNode,
+					contentSelector,
+				} );
+			}
+		}
+	} );
 
+	return new Promise( ( resolve ) => {
 		const uponReady = () => {
 			const element = rootElement || document.body;
 

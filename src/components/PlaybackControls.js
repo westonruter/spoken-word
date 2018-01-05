@@ -1,5 +1,5 @@
 
-import { __ } from '../i18n';
+import { __, _n, sprintf } from '../i18n';
 import React, { Component } from 'preact-compat';
 import PropTypes from 'prop-types';
 import PlaybackButton from './PlaybackButton';
@@ -8,6 +8,9 @@ import { uniqueId } from '../helpers';
 export default class PlaybackControls extends Component {
 	constructor() {
 		super();
+
+		this.showDialog = this.showDialog.bind( this );
+		this.hideDialog = this.hideDialog.bind( this );
 		this.state = {
 			dialogOpen: false,
 		};
@@ -21,12 +24,20 @@ export default class PlaybackControls extends Component {
 		this.updateDialogState();
 		this.dialog.addEventListener( 'cancel', ( event ) => {
 			event.preventDefault();
-			this.setState( { dialogOpen: false } );
+			this.hideDialog();
 		} );
 	}
 
 	componentDidUpdate() {
 		this.updateDialogState();
+	}
+
+	showDialog() {
+		this.setState( { dialogOpen: true } );
+	}
+
+	hideDialog() {
+		this.setState( { dialogOpen: false } );
 	}
 
 	updateDialogState() {
@@ -38,16 +49,44 @@ export default class PlaybackControls extends Component {
 		} else if ( this.state.dialogOpen && ! this.dialog.open ) {
 			this.previousActiveElement = document.activeElement;
 			this.dialog.showModal();
+			this.props.onShowSettings();
 		}
 	}
 
+	renderLanguageVoiceSelects() {
+		if ( 0 === this.props.availableVoices.length || 0 === this.props.presentLanguages.length ) {
+			return null;
+		}
+
+		const selects = [];
+		for ( const presentLanguage of this.props.presentLanguages ) {
+			const languageVoices = this.props.availableVoices.filter( ( voice ) => voice.lang.startsWith( presentLanguage ) );
+			if ( 0 === languageVoices.length ) {
+				continue;
+			}
+
+			selects.push(
+				<p key={ presentLanguage }>
+					{ sprintf( __( 'Voice (%s):' ), presentLanguage ) }
+					{
+						<select>
+							{ languageVoices.map(
+								( voice ) =>
+									<option key={ voice.voiceURI } value={ voice.voiceURI }>
+										{ voice.lang === voice.fullLang ?
+											voice.name :
+											sprintf( __( '%s (%s)' ), voice.name, voice.fullLang ) }
+									</option>
+							) }
+						</select>
+					}
+				</p>
+			);
+		}
+		return selects;
+	}
+
 	render() {
-		const showDialog = () => {
-			this.setState( { dialogOpen: true } );
-		};
-		const hideDialog = () => {
-			this.setState( { dialogOpen: false } );
-		};
 		const saveDialogRef = ( dialog ) => {
 			this.dialog = dialog;
 		};
@@ -69,24 +108,19 @@ export default class PlaybackControls extends Component {
 
 				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="controls-back" emoji="⏪" label={ __( 'Previous' ) } onClick={ this.props.previous } />
 				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="controls-forward" emoji="⏩" label={ __( 'Forward' ) } onClick={ this.props.next } />
-				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="admin-settings" emoji="⚙" label={ __( 'Settings' ) } onClick={ showDialog } />
+				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="admin-settings" emoji="⚙" label={ __( 'Settings' ) } onClick={ this.showDialog } />
 
 				<dialog ref={ saveDialogRef }>
 					<p>
 						<label htmlFor={ this.idPrefix + 'rate' }>{ __( 'Rate:' ) }</label>
-						<input id={ this.idPrefix + 'rate' } type="number" defaultValue={1.0} />
+						<input id={ this.idPrefix + 'rate' } type="number" defaultValue={1.0} step={0.1} />
 					</p>
 					<p>
 						<label htmlFor={ this.idPrefix + 'pitch' }>{ __( 'Pitch:' ) }</label>
-						<input id={ this.idPrefix + 'pitch' } type="number" defaultValue={1.0} />
+						<input id={ this.idPrefix + 'pitch' } type="number" defaultValue={1.0} step={0.1} />
 					</p>
-					<p>
-						<label htmlFor={ this.idPrefix + 'voice[en]' }>{ __( 'Voice:' ) }</label>
-						<select id={ this.idPrefix + 'voice[en]' }>
-							<option>Alex</option>
-						</select>
-					</p>
-					<button onClick={ hideDialog }>{ __( 'Close' ) }</button>
+					{ this.renderLanguageVoiceSelects() }
+					<button onClick={ this.hideDialog }>{ __( 'Close' ) }</button>
 				</dialog>
 			</fieldset>
 		);
@@ -96,10 +130,13 @@ export default class PlaybackControls extends Component {
 PlaybackControls.propTypes = {
 	playback: PropTypes.string.isRequired,
 	play: PropTypes.func.isRequired,
+	onShowSettings: PropTypes.func.isRequired,
 	stop: PropTypes.func.isRequired,
 	previous: PropTypes.func.isRequired,
 	next: PropTypes.func.isRequired,
 	useDashicons: PropTypes.bool,
+	presentLanguages: PropTypes.array.isRequired,
+	availableVoices: PropTypes.array.isRequired,
 };
 
 PlaybackControls.defaultProps = {

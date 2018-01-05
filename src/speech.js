@@ -1,7 +1,7 @@
 
 import React, { render, unmountComponentAtNode } from 'preact-compat';
 import EventEmitter from 'event-emitter';
-import chunkify from './chunkify';
+import chunkify, { getWeightedChunkLanguages } from './chunkify';
 import * as voices from './voices';
 import { equalRanges } from './helpers';
 import PlaybackControls from './components/PlaybackControls';
@@ -83,11 +83,12 @@ export default class Speech {
 	} ) {
 		this.rootElement = rootElement;
 		this.chunkifyOptions = chunkifyOptions;
+		this.pauseDurations = pauseDurations;
 		this.useDashicons = useDashicons;
 		this.controlsElement = null;
 		this.currentUtterance = null;
 
-		for ( const method of [ 'play', 'stop', 'next', 'previous', 'updateContainsSelectionState', 'handleEscapeKeydown' ] ) {
+		for ( const method of [ 'play', 'stop', 'next', 'previous', 'updateContainsSelectionState', 'handleEscapeKeydown', 'renderControls' ] ) {
 			this[ method ] = this[ method ].bind( this );
 		}
 
@@ -118,6 +119,7 @@ export default class Speech {
 		document.addEventListener( 'keydown', this.handleEscapeKeydown );
 
 		this.renderControls();
+		this.on( 'change', this.renderControls );
 
 		// @todo Add mutationObserver for this element to call this.chunkify() again.
 	}
@@ -134,6 +136,8 @@ export default class Speech {
 		const newProps = Object.assign( {}, oldProps, props );
 		this.state = newProps;
 
+		let changeCount = 0;
+
 		for ( const key of Object.keys( props ) ) {
 			if ( newProps[ key ] === oldProps[ key ] ) {
 				continue;
@@ -145,12 +149,11 @@ export default class Speech {
 				}
 				this.emit( 'change:' + key, newProps[ key ], oldProps[ key ] );
 			}
+			changeCount += 1;
 		}
-		if ( ! suppressEvents ) {
+		if ( ! suppressEvents && changeCount > 0 ) {
 			this.emit( 'change', newProps, oldProps );
 		}
-
-		this.renderControls();
 	}
 
 	/**
@@ -223,6 +226,28 @@ export default class Speech {
 	 * Render controls.
 	 */
 	renderControls() {
+		const weightedLanguages = getWeightedChunkLanguages( this.chunks );
+		const presentLanguages = Object.keys( weightedLanguages );
+		presentLanguages.sort( ( a, b ) => {
+			return weightedLanguages[ b ] - weightedLanguages[ a ];
+		} );
+
+		const availableVoices = voices.list.filter( ( voice ) => voice.localService ).map( ( voice ) => (
+			{
+				voiceURI: voice.voiceURI,
+				name: voice.name,
+				lang: voice.lang.replace( /-.*/, '' ),
+				fullLang: voice.lang,
+				default: voice.default, // @todo Replace with selected.
+			}
+		) );
+		availableVoices.sort( ( a, b ) => {
+			if ( a.name === b.name ) {
+				return 0;
+			}
+			return a.name < b.name ? -1 : 1;
+		} );
+
 		const props = Object.assign(
 			{},
 			this.state,
@@ -232,7 +257,14 @@ export default class Speech {
 				next: this.next,
 				previous: this.previous,
 				useDashicons: this.useDashicons,
-			}
+				onShowSettings: () => {
+					if ( ! voices.isLoaded() ) {
+						voices.load().then( this.renderControls );
+					}
+				},
+				presentLanguages,
+				availableVoices,
+			},
 		);
 		render( <PlaybackControls { ...props } />, this.controlsElement );
 	}

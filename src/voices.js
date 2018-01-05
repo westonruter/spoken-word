@@ -2,15 +2,8 @@
 export const list = [];
 
 const pendingPromiseCallbacks = [];
-const previousOnVoicesChanged = speechSynthesis.onvoiceschanged;
 
-/**
- * Handle voiceschanged.
- */
-speechSynthesis.onvoiceschanged = function( ...args ) {
-	if ( previousOnVoicesChanged ) {
-		previousOnVoicesChanged.call( speechSynthesis, ...args );
-	}
+speechSynthesis.addEventListener( 'voiceschanged', () => {
 	list.push( ...speechSynthesis.getVoices() );
 	for ( const { resolve, reject } of pendingPromiseCallbacks ) {
 		if ( list.length > 0 ) {
@@ -19,7 +12,16 @@ speechSynthesis.onvoiceschanged = function( ...args ) {
 			reject();
 		}
 	}
-};
+} );
+
+/**
+ * Determine whether list is loaded.
+ *
+ * @return {boolean} Is loaded.
+ */
+export function isLoaded() {
+	return list.length > 0;
+}
 
 /**
  * Get voices.

@@ -28,6 +28,31 @@ function findLanguage( startElement ) {
 }
 
 /**
+ * Get weighted chunk languages.
+ *
+ * @param {Chunk[]} chunks                - Chunks.
+ * @param {boolean} [excludeCountry=true] - Exclude country code.
+ * @returns {Object<string, number>} Mapping language code to size.
+ */
+export function getWeightedChunkLanguages( chunks, { excludeCountry = true } = {} ) {
+	const languageSizes = {};
+	for ( const chunk of chunks ) {
+		let lang = chunk.language;
+		if ( excludeCountry ) {
+			lang = lang.replace( /-.*/, '' );
+		}
+		if ( ! languageSizes[ lang ] ) {
+			languageSizes[ lang ] = 0;
+		}
+		languageSizes[ lang ] += chunk.nodes.reduce(
+			( previous, current ) => previous + current.length,
+			0
+		);
+	}
+	return languageSizes;
+}
+
+/**
  * Omit including containers for text nodes that are for image captions or
  * superscripts. Build list of text nodes first, then remove ones that are
  * omitted (consider weak set), and then concatenate for synthesis followed
