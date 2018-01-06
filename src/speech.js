@@ -493,8 +493,12 @@ export default class Speech {
 			}
 			selectedRange = selection.getRangeAt( 0 );
 		}
-		if ( selectedRange.startContainer.nodeType !== Node.TEXT_NODE ) {
-			return null;
+		try {
+			if ( selectedRange.startContainer.nodeType !== Node.TEXT_NODE ) {
+				return null;
+			}
+		} catch ( e ) {
+			return null; // Firefox sometimes errors with Permission denied to access property "nodeType".
 		}
 		for ( let chunkIndex = 0; chunkIndex < this.chunks.length; chunkIndex++ ) {
 			let chunkRangeOffset = 0;
@@ -517,8 +521,14 @@ export default class Speech {
 		if ( 0 !== selection.rangeCount ) {
 			const range = selection.getRangeAt( 0 );
 			const props = {
-				containsSelection: this.rootElement.contains( range.startContainer ) || this.rootElement.contains( range.endContainer ),
+				containsSelection: false,
 			};
+			try {
+				// @todo Firefox Permission denied to access property "nodeType"
+				props.containsSelection = this.rootElement.contains( range.startContainer ) || this.rootElement.contains( range.endContainer );
+			} catch ( e ) {
+				// Firefox.
+			}
 
 			// Move current playback to newly selected range if not added programmatically.
 			if ( 'playing' === this.state.playback && this.playbackAddedRange && ! equalRanges( range, this.playbackAddedRange ) ) {
