@@ -14,8 +14,13 @@ export default class PlaybackButton extends Component {
 			buttonClassNames.push( 'spoken-word-playback-controls__button--emoji' );
 		}
 
+		let pressed;
+		if ( typeof this.props.pressed !== 'undefined' ) {
+			pressed = this.props.pressed ? 'true' : 'false';
+		}
+
 		return (
-			<button type="button" className={ buttonClassNames.join( ' ' ) } style={ style } aria-label={ this.props.label } onClick={ this.props.onClick }>
+			<button aria-pressed={ pressed } type="button" className={ buttonClassNames.join( ' ' ) } style={ style } aria-label={ this.props.label } onClick={ this.props.onClick }>
 				{ this.props.useDashicon ?
 					<span className={ 'dashicons dashicons-' + this.props.dashicon } /> :
 					this.props.emoji
@@ -26,6 +31,7 @@ export default class PlaybackButton extends Component {
 }
 
 PlaybackButton.propTypes = {
+	pressed: PropTypes.bool,
 	label: PropTypes.string.isRequired,
 	emoji: PropTypes.string.isRequired,
 	dashicon: PropTypes.string.isRequired,

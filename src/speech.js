@@ -296,11 +296,8 @@ export default class Speech {
 				next: this.next,
 				previous: this.previous,
 				useDashicons: this.useDashicons,
-				onShowSettings: () => {
-					this.setState( { settingsShown: true } );
-				},
-				onHideSettings: () => {
-					this.setState( { settingsShown: false } );
+				toggleSettings: () => {
+					this.setState( { settingsShown: ! this.state.settingsShown } );
 				},
 				presentLanguages,
 				availableVoices: this.getAvailableVoices(),
