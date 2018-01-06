@@ -49,4 +49,6 @@
 }
 .spoken-word-playback-controls__dialog {
 	position: fixed;
+	top: 50%;
+	transform: translateY(-50%);
 }
