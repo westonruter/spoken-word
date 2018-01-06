@@ -28,7 +28,7 @@ function enqueue_scripts() {
 	wp_enqueue_style( 'spoken-word', plugin_dir_url( __FILE__ ) . 'css/style.css' );
 
 	$handle = 'spoken-word';
-	$src = plugin_dir_url( __FILE__ ) . 'dist/app.js';
+	$src = plugin_dir_url( __FILE__ ) . 'dist/spoken-word.js';
 	$deps = array();
 	$in_footer = true;
 	wp_enqueue_script( $handle, $src, $deps, VERSION, $in_footer );

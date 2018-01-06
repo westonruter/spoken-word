@@ -4,10 +4,12 @@ const path = require( 'path' );
 const CleanWebpackPlugin = require( 'clean-webpack-plugin' );
 
 module.exports = {
-	entry: './src/index.js',
+	entry: {
+		app: './src/index.js',
+	},
 	output: {
 		path: path.resolve( __dirname, 'dist' ),
-		filename: 'app.js',
+		filename: 'spoken-word.js',
 		libraryTarget: 'window',
 		library: 'spokenWord',
 	},
