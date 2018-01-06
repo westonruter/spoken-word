@@ -67,12 +67,16 @@ export default class PlaybackControls extends Component {
 				continue;
 			}
 
+			const id = this.idPrefix + 'voice-' + presentLanguage;
 			selects.push(
 				<p key={ presentLanguage }>
-					{ sprintf( __( 'Voice (%s):' ), presentLanguage ) }
+					<label htmlFor={ id }>
+						{ sprintf( __( 'Voice (%s):' ), presentLanguage ) }
+					</label>
 					{ ' ' }
 					{
 						<select
+							id={ id }
 							data-language={ presentLanguage }
 							value={ this.props.languageVoices[ presentLanguage ] }
 							onBlur={ updateLanguageVoice }
@@ -113,7 +117,7 @@ export default class PlaybackControls extends Component {
 				return;
 			}
 			this.props.setProps( {
-				[ event.target.dataset.prop ]: event.target.valueAsNumber
+				[ event.target.dataset.prop ]: event.target.valueAsNumber,
 			} );
 		};
 
