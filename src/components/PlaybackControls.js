@@ -1,3 +1,4 @@
+/* global dialogPolyfill */
 
 import { __, sprintf } from '../i18n';
 import React, { Component } from 'preact-compat';
@@ -12,6 +13,9 @@ export default class PlaybackControls extends Component {
 
 	componentDidMount() {
 		this.updateDialogState();
+		if ( ! this.dialog.showModal && typeof dialogPolyfill !== 'undefined' ) {
+			dialogPolyfill.registerDialog( this.dialog );
+		}
 		this.dialog.addEventListener( 'cancel', ( event ) => {
 			event.preventDefault();
 			this.props.onHideSettings();

@@ -27,9 +27,11 @@ function enqueue_scripts() {
 	wp_enqueue_style( 'dashicons' );
 	wp_enqueue_style( 'spoken-word', plugin_dir_url( __FILE__ ) . 'css/style.css' );
 
+	wp_register_script( 'dialog-polyfill', 'https://unpkg.com/dialog-polyfill@0.4.9/dialog-polyfill.js' );
+
 	$handle = 'spoken-word';
 	$src = plugin_dir_url( __FILE__ ) . 'dist/app.js';
-	$deps = array();
+	$deps = array( 'dialog-polyfill' );
 	$in_footer = true;
 	wp_enqueue_script( $handle, $src, $deps, VERSION, $in_footer );
 

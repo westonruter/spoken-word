@@ -214,6 +214,8 @@ export default class Speech {
 				this.voicePropChanged = true; // Prevent playback from stopping onend.
 				this.startPlayingCurrentChunkAndQueueNext();
 			}
+
+			// @todo Trigger utteranceOptionChange event with { languageVoices, rate, pitch }.
 		};
 		this.on( 'change:languageVoices', handleVoicePropChangeDuringPlayback );
 		this.on( 'change:rate', handleVoicePropChangeDuringPlayback );
