@@ -408,8 +408,19 @@ export default class Speech {
 					{ suppressEvents: true }
 				);
 
-				// Keep the element scrolled into view.
-				currentTextNode.parentElement.scrollIntoView( { behavior: 'smooth' } );
+				const clientBoundingRect = currentTextNode.parentElement.getBoundingClientRect();
+				const isVisible = (
+					clientBoundingRect.top >= 0 &&
+					clientBoundingRect.left >= 0 &&
+					clientBoundingRect.bottom <= document.documentElement.clientHeight &&
+					clientBoundingRect.right <= document.documentElement.clientWidth
+				);
+				if ( ! isVisible ) {
+					currentTextNode.parentElement.scrollIntoView( {
+						behavior: 'smooth',
+						block: clientBoundingRect.top < 0 ? 'start' : 'end',
+					} );
+				}
 
 				while ( nextNodes.length && event.charIndex + firstNodeOffset >= previousSpokenNodesLength + currentTextNode.length ) {
 					previousSpokenNodesLength += currentTextNode.length;
