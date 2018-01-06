@@ -124,27 +124,32 @@ export function initialize( {
 	chunkifyOptions,
 	defaultUtteranceOptions = DEFAULT_UTTERANCE_OPTIONS,
 } = {} ) {
-	const mutationObserver = new MutationObserver( ( mutations ) => {
-		for ( const mutation of mutations ) {
-			for ( const addedNode of [ ...mutation.addedNodes ].filter( ( node ) => node.nodeType === Node.ELEMENT_NODE ) ) {
-				createSpeeches( {
-					element: addedNode,
-					contentSelector,
-					useDashicons,
-					chunkifyOptions,
-					defaultUtteranceOptions,
-				} );
-			}
-			for ( const removedNode of [ ...mutation.removedNodes ].filter( ( node ) => node.nodeType === Node.ELEMENT_NODE ) ) {
-				destroySpeeches( {
-					element: removedNode,
-					contentSelector,
-				} );
-			}
+	return new Promise( ( resolve, reject ) => {
+		if ( typeof speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined' ) {
+			reject( 'speech_synthesis_not_supported' );
+			return;
 		}
-	} );
 
-	return new Promise( ( resolve ) => {
+		const mutationObserver = new MutationObserver( ( mutations ) => {
+			for ( const mutation of mutations ) {
+				for ( const addedNode of [ ...mutation.addedNodes ].filter( ( node ) => node.nodeType === Node.ELEMENT_NODE ) ) {
+					createSpeeches( {
+						element: addedNode,
+						contentSelector,
+						useDashicons,
+						chunkifyOptions,
+						defaultUtteranceOptions,
+					} );
+				}
+				for ( const removedNode of [ ...mutation.removedNodes ].filter( ( node ) => node.nodeType === Node.ELEMENT_NODE ) ) {
+					destroySpeeches( {
+						element: removedNode,
+						contentSelector,
+					} );
+				}
+			}
+		} );
+
 		const uponReady = () => {
 			const element = rootElement || document.body;
 
