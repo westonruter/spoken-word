@@ -118,6 +118,7 @@ export default class Speech {
 		// @todo Also if focus removed from container?
 		document.addEventListener( 'selectionchange', this.updateContainsSelectionState );
 		document.addEventListener( 'keydown', this.handleEscapeKeydown );
+		this.isDialogSupported = ( 'showModal' in document.createElement( 'dialog' ) || 'undefined' !== typeof dialogPolyfill );
 
 		this.renderControls();
 		this.on( 'change', this.renderControls );
@@ -309,7 +310,8 @@ export default class Speech {
 				languageVoices: this.getLanguageVoices(),
 				setProps: ( props ) => {
 					this.setState( props );
-				}
+				},
+				isDialogSupported: this.isDialogSupported,
 			},
 		);
 		render( <PlaybackControls { ...props } />, this.controlsElement );

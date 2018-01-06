@@ -27,14 +27,32 @@ function enqueue_scripts() {
 	wp_enqueue_style( 'dashicons' );
 	wp_enqueue_style( 'spoken-word', plugin_dir_url( __FILE__ ) . 'css/style.css' );
 
-	// @todo Install and serve locally.
-	wp_register_script( 'dialog-polyfill', 'https://unpkg.com/dialog-polyfill@0.4.9/dialog-polyfill.js' );
-
 	$handle = 'spoken-word';
 	$src = plugin_dir_url( __FILE__ ) . 'dist/app.js';
-	$deps = array( 'dialog-polyfill' );
+	$deps = array();
 	$in_footer = true;
 	wp_enqueue_script( $handle, $src, $deps, VERSION, $in_footer );
+
+	/**
+	 * Filters URL to dialog polyfill script.
+	 *
+	 * If filter returns empty value, then polyfill will not be included. If a non-empty value is returned, then an inline script will be added which does a document.write()
+	 * to load the polyfill script conditionally if there is no showModal property on a dialog element.
+	 *
+	 * @todo Install dialog-polyfill as local package.
+	 * @param string $polyfill_src Polyfill URL.
+	 */
+	$polyfill_src = apply_filters( 'spoken_word_dialog_polyfill_src', 'https://unpkg.com/dialog-polyfill@0.4.9/dialog-polyfill.js' );
+
+	if ( $polyfill_src ) {
+		wp_add_inline_script(
+			$handle,
+			sprintf(
+				'if ( ! ( "showModal" in document.createElement( "dialog" ) ) ) { document.write( %s ); }',
+				wp_json_encode( sprintf( '<script src="%s"></script>', esc_url( $polyfill_src ) ) )
+			)
+		);
+	}
 
 	// Export locale data.
 	wp_add_inline_script(

@@ -104,18 +104,18 @@ export default class PlaybackControls extends Component {
 	}
 
 	/**
-	 * Render.
+	 * Render settings.
 	 *
-	 * @return {VNode} Element.
+	 * @returns {VNode|null} Settings.
 	 */
-	render() {
+	renderSettings() {
+		if ( ! this.props.isDialogSupported ) {
+			return null;
+		}
+
 		const saveDialogRef = ( dialog ) => {
 			this.dialog = dialog;
 		};
-
-		const classNames = [ 'spoken-word-playback-controls' ];
-		const isPlaying = 'playing' === this.props.playback;
-
 		const handleNumericPropInputChange = ( event ) => {
 			if ( isNaN( event.target.valueAsNumber ) || ! event.target.validity.valid ) {
 				return;
@@ -124,6 +124,51 @@ export default class PlaybackControls extends Component {
 				[ event.target.dataset.prop ]: event.target.valueAsNumber,
 			} );
 		};
+
+		return (
+			<dialog className="spoken-word-playback-controls__dialog" ref={ saveDialogRef }>
+				<p>
+					<label htmlFor={ this.idPrefix + 'rate' }>{ __( 'Rate:' ) }</label>
+					{ ' ' }
+					<input
+						id={ this.idPrefix + 'rate' }
+						type="number"
+						data-prop="rate"
+						value={ this.props.rate }
+						step={ 0.1 }
+						min={ 0.1 }
+						max={ 10 }
+						onChange={ handleNumericPropInputChange }
+					/>
+				</p>
+				<p>
+					<label htmlFor={ this.idPrefix + 'pitch' }>{ __( 'Pitch:' ) }</label>
+					{ ' ' }
+					<input
+						id={ this.idPrefix + 'pitch' }
+						type="number"
+						data-prop="pitch"
+						value={ this.props.pitch }
+						min={ 0 }
+						max={ 2 }
+						step={ 0.1 }
+						onChange={ handleNumericPropInputChange }
+					/>
+				</p>
+				{ this.renderLanguageVoiceSelects() }
+				<button onClick={ this.props.onHideSettings }>{ __( 'Close' ) }</button>
+			</dialog>
+		);
+	}
+
+	/**
+	 * Render.
+	 *
+	 * @return {VNode} Element.
+	 */
+	render() {
+		const classNames = [ 'spoken-word-playback-controls' ];
+		const isPlaying = 'playing' === this.props.playback;
 
 		return (
 			<fieldset className={ classNames.join( ' ' ) }>
@@ -139,40 +184,9 @@ export default class PlaybackControls extends Component {
 
 				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="controls-back" emoji="⏪" label={ __( 'Previous' ) } onClick={ this.props.previous } />
 				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="controls-forward" emoji="⏩" label={ __( 'Forward' ) } onClick={ this.props.next } />
-				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="admin-settings" emoji="⚙" label={ __( 'Settings' ) } onClick={ this.props.onShowSettings } />
-
-				<dialog className="spoken-word-playback-controls__dialog" ref={ saveDialogRef }>
-					<p>
-						<label htmlFor={ this.idPrefix + 'rate' }>{ __( 'Rate:' ) }</label>
-						{ ' ' }
-						<input
-							id={ this.idPrefix + 'rate' }
-							type="number"
-							data-prop="rate"
-							value={ this.props.rate }
-							step={ 0.1 }
-							min={ 0.1 }
-							max={ 10 }
-							onChange={ handleNumericPropInputChange }
-						/>
-					</p>
-					<p>
-						<label htmlFor={ this.idPrefix + 'pitch' }>{ __( 'Pitch:' ) }</label>
-						{ ' ' }
-						<input
-							id={ this.idPrefix + 'pitch' }
-							type="number"
-							data-prop="pitch"
-							value={ this.props.pitch }
-							min={ 0 }
-							max={ 2 }
-							step={ 0.1 }
-							onChange={ handleNumericPropInputChange }
-						/>
-					</p>
-					{ this.renderLanguageVoiceSelects() }
-					<button onClick={ this.props.onHideSettings }>{ __( 'Close' ) }</button>
-				</dialog>
+				{ this.props.isDialogSupported ?
+					<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="admin-settings" emoji="⚙" label={ __( 'Settings' ) } onClick={ this.props.onShowSettings } /> : '' }
+				{ this.renderSettings() }
 			</fieldset>
 		);
 	}
@@ -188,6 +202,7 @@ PlaybackControls.propTypes = {
 	next: PropTypes.func.isRequired,
 	useDashicons: PropTypes.bool,
 	settingsShown: PropTypes.bool,
+	isDialogSupported: PropTypes.bool,
 	presentLanguages: PropTypes.array.isRequired,
 	availableVoices: PropTypes.array.isRequired,
 	languageVoices: PropTypes.object.isRequired,
