@@ -617,10 +617,19 @@ export default class Speech {
 			}
 		};
 
-		// Clear the queue so we can start speaking.
-		if ( speechSynthesis.speaking || speechSynthesis.pending ) {
-			speechSynthesis.cancel();
-		}
+		const speakingStoppedPromise = new Promise( ( resolve ) => {
+			// Wait for cancelled speaking to be confirmed to be ended. Needed in Chrome.
+			if ( speechSynthesis.speaking ) {
+				const CANCEL_WAIT_TIMEOUT = 100;
+				if ( this.currentUtterance ) {
+					this.currentUtterance.addEventListener( 'end', resolve );
+				}
+				setTimeout( () => resolve, CANCEL_WAIT_TIMEOUT );
+				speechSynthesis.cancel();
+			} else {
+				resolve();
+			}
+		} );
 
 		const queueNextChunk = () => {
 			if ( this.state.chunkIndex + 1 === this.chunks.length ) {
@@ -643,7 +652,7 @@ export default class Speech {
 		};
 
 		// Make sure voices are loaded and speech synthesis has been completely stopped (since cancel is apparently async).
-		voices.load().then( () => {
+		Promise.all( [ voices.load(), speakingStoppedPromise ] ).then( () => {
 			this.setState( {
 				speakTimeoutId: setTimeout( () => {
 					this.speakChunk().then( queueNextChunk, reject );
