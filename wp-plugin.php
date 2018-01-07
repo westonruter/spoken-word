@@ -36,10 +36,10 @@ function enqueue_scripts() {
 	/**
 	 * Filters URL to dialog polyfill script.
 	 *
-	 * If filter returns empty value, then polyfill will not be included. If a non-empty value is returned, then an inline script will be added which does a document.write()
-	 * to load the polyfill script conditionally if there is no showModal property on a dialog element.
+	 * If filter returns empty value, then polyfill will not be included. If a non-empty value is returned,
+	 * then an inline script will be added which does a document.write() to load the polyfill script
+	 * conditionally if there is no showModal property on a dialog element.
 	 *
-	 * @todo Install dialog-polyfill as local package.
 	 * @param string $polyfill_src Polyfill URL.
 	 */
 	$polyfill_src = apply_filters( 'spoken_word_dialog_polyfill_src', 'https://unpkg.com/dialog-polyfill@0.4.9/dialog-polyfill.js' );

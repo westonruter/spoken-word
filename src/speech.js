@@ -58,7 +58,6 @@ const DEFAULT_PAUSE_DURATIONS = {
 const CHUNK_BEGINNING_OFFSET_THRESHOLD = 10;
 
 /**
- * @todo Rename to Controller.
  * @class Speech
  * @augments EventEmitter
  */
@@ -118,7 +117,7 @@ export default class Speech {
 		// @todo Also if focus removed from container?
 		document.addEventListener( 'selectionchange', this.updateContainsSelectionState );
 		document.addEventListener( 'keydown', this.handleEscapeKeydown );
-		this.isDialogSupported = ( 'showModal' in document.createElement( 'dialog' ) || 'undefined' !== typeof dialogPolyfill );
+		this.isDialogSupported = 'showModal' in document.createElement( 'dialog' ) || 'undefined' !== typeof dialogPolyfill;
 
 		this.renderControls();
 		this.on( 'change', this.renderControls );
@@ -308,11 +307,11 @@ export default class Speech {
 				presentLanguages,
 				availableVoices: this.getAvailableVoices(),
 				languageVoices: this.getLanguageVoices(),
-				setProps: ( props ) => {
-					this.setState( props );
+				setProps: ( updatedProps ) => {
+					this.setState( updatedProps );
 				},
 				isDialogSupported: this.isDialogSupported,
-			},
+			}
 		);
 		render( <PlaybackControls { ...props } />, this.controlsElement );
 	}

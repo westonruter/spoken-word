@@ -30,6 +30,8 @@
  * SOFTWARE.
  */
 
+/* eslint-disable */
+
 /**
  * External dependencies
  */
