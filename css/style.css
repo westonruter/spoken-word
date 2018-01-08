@@ -52,3 +52,8 @@
 	top: 50%;
 	transform: translateY(-50%);
 }
+
+/* Needed by Safari */
+.spoken-word-playback-controls__dialog:not([open]) {
+	display: none;
+}

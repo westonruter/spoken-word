@@ -13,8 +13,17 @@ const pendingPromiseCallbacks = [];
  */
 let loaded = false;
 
-// Listen for changes to loaded voices and resolve when non-empty.
-speechSynthesis.addEventListener( 'voiceschanged', () => {
+const previousOnVoicesChanged = speechSynthesis.onvoiceschanged;
+
+/*
+ * Listen for changes to loaded voices and resolve when non-empty.
+ * Note that Safari doesn't yet support speechSynthesis.addEventListener()
+ * so that is why setting onvoiceschanged is done here.
+ */
+speechSynthesis.onvoiceschanged = function( event ) {
+	if ( previousOnVoicesChanged ) {
+		previousOnVoicesChanged.call( this, event );
+	}
 	const list = speechSynthesis.getVoices();
 	for ( const { resolve, reject } of pendingPromiseCallbacks ) {
 		if ( list.length > 0 ) {
@@ -24,7 +33,7 @@ speechSynthesis.addEventListener( 'voiceschanged', () => {
 			reject();
 		}
 	}
-} );
+};
 
 /**
  * Determine whether list is loaded.
