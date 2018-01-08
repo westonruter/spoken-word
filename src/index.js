@@ -76,12 +76,10 @@ function findContentRoots( root, selector ) {
  * @param {string}  contentSelector - Selector for content elements.
  * @param {object}  chunkifyOptions - Options passed to chunkify().
  * @param {bool}    useDashicons    - Whether to use Dashicons in playback controls.
- * @param {object}  defaultUtteranceOptions - Options for utterance. (Deprecated.)
  */
-function createSpeeches( { element, contentSelector, chunkifyOptions, useDashicons, defaultUtteranceOptions } ) {
+function createSpeeches( { element, contentSelector, chunkifyOptions, useDashicons } ) {
 	const rootElements = findContentRoots( element, contentSelector );
 	for ( const rootElement of rootElements ) {
-
 		// Skip elements already added.
 		if ( speechRootMap.has( rootElement ) ) {
 			continue;
@@ -205,7 +203,6 @@ export function initialize( {
 						contentSelector,
 						useDashicons,
 						chunkifyOptions,
-						defaultUtteranceOptions,
 					} );
 				}
 				for ( const removedNode of [ ...mutation.removedNodes ].filter( ( node ) => node.nodeType === Node.ELEMENT_NODE ) ) {
@@ -230,7 +227,6 @@ export function initialize( {
 				contentSelector,
 				chunkifyOptions,
 				useDashicons,
-				defaultUtteranceOptions,
 			} );
 
 			mutationObserver.observe( element, {
