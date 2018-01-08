@@ -353,9 +353,16 @@ export default class Speech {
 	getVoice( chunk ) {
 		const languageVoices = this.getLanguageVoices();
 		const baseLanguage = chunk.language.replace( /-.*/, '' ).toLowerCase();
-		return speechSynthesis.getVoices().find(
+		let resultingVoice = null;
+		resultingVoice = speechSynthesis.getVoices().find(
 			( voice ) => voice.voiceURI === languageVoices[ baseLanguage ]
 		);
+		if ( ! resultingVoice ) {
+			resultingVoice = speechSynthesis.getVoices().find(
+				( voice ) => voice.lang.startsWith( baseLanguage )
+			);
+		}
+		return resultingVoice;
 	}
 
 	/**
