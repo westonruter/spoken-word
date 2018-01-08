@@ -259,7 +259,7 @@ export default class Speech {
 		if ( this._availableVoices && this._availableVoices.length > 0 ) {
 			return this._availableVoices;
 		}
-		const availableVoices = voices.list.filter( ( voice ) => voice.localService );
+		const availableVoices = speechSynthesis.getVoices().filter( ( voice ) => voice.localService );
 		availableVoices.sort( ( a, b ) => {
 			if ( a.name === b.name ) {
 				return 0;

@@ -1,13 +1,25 @@
 
-export const list = [];
-
+/**
+ * Pending promise callbacks.
+ *
+ * @type {Array.<Object>}
+ */
 const pendingPromiseCallbacks = [];
 
+/**
+ * Whether voices have been loaded.
+ *
+ * @type {boolean}
+ */
+let loaded = false;
+
+// Listen for changes to loaded voices and resolve when non-empty.
 speechSynthesis.addEventListener( 'voiceschanged', () => {
-	list.push( ...speechSynthesis.getVoices() );
+	const list = speechSynthesis.getVoices();
 	for ( const { resolve, reject } of pendingPromiseCallbacks ) {
 		if ( list.length > 0 ) {
-			resolve( list );
+			loaded = true;
+			resolve();
 		} else {
 			reject();
 		}
@@ -20,7 +32,7 @@ speechSynthesis.addEventListener( 'voiceschanged', () => {
  * @return {boolean} Is loaded.
  */
 export function isLoaded() {
-	return list.length > 0;
+	return loaded;
 }
 
 /**
@@ -30,14 +42,12 @@ export function isLoaded() {
  */
 export function load() {
 	return new Promise( ( resolve, reject ) => {
-		if ( list.length > 0 ) {
-			resolve( list );
-			return;
-		}
+		const list = speechSynthesis.getVoices();
 
-		list.push( ...speechSynthesis.getVoices() );
 		if ( list.length > 0 ) {
-			resolve( list );
+			loaded = true;
+			resolve();
+			return;
 		}
 
 		pendingPromiseCallbacks.push( { resolve, reject } );
