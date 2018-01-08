@@ -220,7 +220,11 @@ export default class Speech {
 				this.startPlayingCurrentChunkAndQueueNext();
 			}
 
-			// @todo Trigger utteranceOptionChange event with { languageVoices, rate, pitch }.
+			this.emit( 'sharedStateChange', {
+				languageVoices: this.state.languageVoices,
+				rate: this.state.rate,
+				pitch: this.state.pitch,
+			} );
 		};
 		this.on( 'change:languageVoices', handleVoicePropChangeDuringPlayback );
 		this.on( 'change:rate', handleVoicePropChangeDuringPlayback );

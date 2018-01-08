@@ -87,6 +87,14 @@ function createSpeeches( { element, contentSelector, chunkifyOptions, useDashico
 			}
 		} );
 
+		speech.on( 'sharedStateChange', ( state ) => {
+			for ( const otherSpeech of speechRootMap.values() ) {
+				if ( otherSpeech !== speech ) {
+					otherSpeech.setState( state );
+				}
+			}
+		} );
+
 		speech.initialize();
 	}
 }
