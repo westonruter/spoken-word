@@ -101,6 +101,10 @@ function destroySpeeches( { element, contentSelector } ) {
 	for ( const rootElement of speechRoots ) {
 		const speech = speechRootMap.get( rootElement );
 		if ( speech ) {
+			const i = speeches.indexOf( speech );
+			if ( i !== -1 ) {
+				speeches.splice( i, 1 );
+			}
 			speech.destroy();
 			speechRootMap.delete( rootElement );
 		}

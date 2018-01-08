@@ -58,7 +58,9 @@ const DEFAULT_PAUSE_DURATIONS = {
 const CHUNK_BEGINNING_OFFSET_THRESHOLD = 10;
 
 /**
- * @class Speech
+ * Representing a spoken section.
+ *
+ * @todo Switch to higher-order React.Component.
  * @augments EventEmitter
  */
 export default class Speech {
@@ -139,6 +141,7 @@ export default class Speech {
 
 		let changeCount = 0;
 
+		// @todo Instead of emitting an event, just allow an onChange prop to be sent down, and make use of componentDidUpdate to call.
 		for ( const key of Object.keys( props ) ) {
 			if ( isEqual( newProps[ key ], oldProps[ key ] ) ) {
 				continue;
@@ -159,6 +162,8 @@ export default class Speech {
 
 	/**
 	 * Set up state machine.
+	 *
+	 * @todo This can be handled in componentDidUpdate.
 	 */
 	setupStateMachine() {
 		this.on( 'change:playback:stopped', () => {
