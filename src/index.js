@@ -37,6 +37,16 @@ const DEFAULT_UTTERANCE_OPTIONS = {
 };
 
 /**
+ * Default utterance options.
+ *
+ * This is set when calling initialize() with a defaultUtteranceOptions param. Any options storage in localStorage
+ * get merged on top of this.
+ *
+ * @type {Object}
+ */
+let customDefaultUtteranceOptions = {};
+
+/**
  * CSS selector for finding the content element.
  *
  * @type {string}
@@ -71,17 +81,18 @@ function findContentRoots( root, selector ) {
 function createSpeeches( { element, contentSelector, chunkifyOptions, useDashicons, defaultUtteranceOptions } ) {
 	const rootElements = findContentRoots( element, contentSelector );
 	for ( const rootElement of rootElements ) {
-		const speech = new Speech( {
-			rootElement,
-			chunkifyOptions,
-			useDashicons,
-			defaultUtteranceOptions,
-		} );
 
 		// Skip elements already added.
 		if ( speechRootMap.has( rootElement ) ) {
 			continue;
 		}
+
+		const speech = new Speech( {
+			rootElement,
+			chunkifyOptions,
+			useDashicons,
+			utteranceOptions: getUtteranceOptions(),
+		} );
 
 		speechRootMap.set( rootElement, speech );
 
@@ -94,12 +105,12 @@ function createSpeeches( { element, contentSelector, chunkifyOptions, useDashico
 			}
 		} );
 
-		speech.on( 'sharedStateChange', ( state ) => {
-			localStorage.setItem( 'spokenWordState', JSON.stringify( state ) );
+		speech.on( 'sharedStateChange', ( sharedState ) => {
+			localStorage.setItem( STATE_STORAGE_KEY, JSON.stringify( sharedState ) );
 
 			for ( const otherSpeech of speechRootMap.values() ) {
 				if ( otherSpeech !== speech ) {
-					otherSpeech.setState( state );
+					otherSpeech.setState( sharedState );
 				}
 			}
 		} );
@@ -113,11 +124,36 @@ window.addEventListener( 'storage', ( event ) => {
 	if ( STATE_STORAGE_KEY !== event.key || event.storageArea !== localStorage ) {
 		return;
 	}
-	const state = JSON.parse( event.newValue );
 	for ( const speech of speechRootMap.values() ) {
-		speech.setState( state );
+		speech.setState( getUtteranceOptions() );
 	}
 } );
+
+/**
+ * Get utterance options merging defaults with custom defaults and localStorage overrides.
+ *
+ * @return {{pitch: number, rate: number, languageVoices: Object<string, string>}} Utterance options.
+ */
+function getUtteranceOptions() {
+	const utteranceOptions = Object.assign(
+		{},
+		DEFAULT_UTTERANCE_OPTIONS,
+		customDefaultUtteranceOptions
+	);
+	try {
+		if ( localStorage.getItem( STATE_STORAGE_KEY ) ) {
+			const sharedState = JSON.parse( localStorage.getItem( STATE_STORAGE_KEY ) );
+			for ( const key of Object.keys( DEFAULT_UTTERANCE_OPTIONS ) ) {
+				if ( 'undefined' !== typeof sharedState[ key ] ) {
+					utteranceOptions[ key ] = sharedState[ key ];
+				}
+			}
+		}
+	} catch ( e ) {
+		localStorage.removeItem( STATE_STORAGE_KEY );
+	}
+	return utteranceOptions;
+}
 
 /**
  * Destroy Speech instances in element.
@@ -153,6 +189,8 @@ export function initialize( {
 	chunkifyOptions,
 	defaultUtteranceOptions = DEFAULT_UTTERANCE_OPTIONS,
 } = {} ) {
+	customDefaultUtteranceOptions = defaultUtteranceOptions;
+
 	return new Promise( ( resolve, reject ) => {
 		if ( typeof speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined' ) {
 			reject( 'speech_synthesis_not_supported' );

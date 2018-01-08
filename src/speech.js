@@ -67,17 +67,17 @@ export default class Speech {
 	/**
 	 * Construct.
 	 *
-	 * @param {Object}  args                         - Args.
-	 * @param {Element} args.rootElement             - Element.
-	 * @param {Object}  args.defaultUtteranceOptions - Default utterance options.
-	 * @param {Object}  args.chunkifyOptions         - Chunkify options.
-	 * @param {Object}  args.pauseDurations          - Pause durations.
-	 * @param {boolean} args.useDashicons=false      - Whether to use Dashicons (as opposed to Emoji).
+	 * @param {Object}  args                    - Args.
+	 * @param {Element} args.rootElement        - Element.
+	 * @param {Object}  args.utteranceOptions   - Default utterance options.
+	 * @param {Object}  args.chunkifyOptions    - Chunkify options.
+	 * @param {Object}  args.pauseDurations     - Pause durations.
+	 * @param {boolean} args.useDashicons=false - Whether to use Dashicons (as opposed to Emoji).
 	 */
 	constructor( {
 		rootElement,
 		useDashicons = false,
-		defaultUtteranceOptions,
+		utteranceOptions = {},
 		chunkifyOptions,
 		pauseDurations = DEFAULT_PAUSE_DURATIONS,
 	} ) {
@@ -100,9 +100,10 @@ export default class Speech {
 			chunkIndex: 0, // Which chunk is playing.
 			chunkRangeOffset: 0, // Which character inside the chunk's nodes was last spoken.
 			languageVoices: {},
-			rate: defaultUtteranceOptions.rate,
-			pitch: defaultUtteranceOptions.pitch,
+			pitch: 1.0,
+			rate: 1.0,
 		};
+		Object.assign( this.state, utteranceOptions );
 	}
 
 	/**
