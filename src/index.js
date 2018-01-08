@@ -5,16 +5,18 @@ export { setLocaleData } from './i18n';
 /**
  * Mapping speech root elements to their corresponding Speech instances.
  *
- * @type {WeakMap<Element, Speech>}
+ * @type {Map<Element, Speech>}
  */
-const speechRootMap = new WeakMap();
+const speechRootMap = new Map();
 
 /**
- * Speech instances.
+ * Get iterator for all Speech instances.
  *
- * @var {Speech[]}
+ * @returns {Iterator.<Speech>} Instances.
  */
-export const speeches = [];
+export function getInstances() {
+	return speechRootMap.values();
+}
 
 /**
  * Default utterance options.
@@ -74,12 +76,11 @@ function createSpeeches( { element, contentSelector, chunkifyOptions, useDashico
 			continue;
 		}
 
-		speeches.push( speech );
 		speechRootMap.set( rootElement, speech );
 
 		// Stop playing all other speeches when playing one.
 		speech.on( 'change:playback:playing', () => {
-			for ( const otherSpeech of speeches ) {
+			for ( const otherSpeech of speechRootMap.values() ) {
 				if ( otherSpeech !== speech ) {
 					otherSpeech.stop();
 				}
@@ -101,10 +102,6 @@ function destroySpeeches( { element, contentSelector } ) {
 	for ( const rootElement of speechRoots ) {
 		const speech = speechRootMap.get( rootElement );
 		if ( speech ) {
-			const i = speeches.indexOf( speech );
-			if ( i !== -1 ) {
-				speeches.splice( i, 1 );
-			}
 			speech.destroy();
 			speechRootMap.delete( rootElement );
 		}
