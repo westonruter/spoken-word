@@ -95,12 +95,11 @@ export default class Speech {
 		this.state = {
 			containsSelection: false,
 			settingsShown: false,
-			speakTimeoutId: 0,
+			speakTimeoutId: 0, // @todo This can be removed from the state.
 			playback: 'stopped',
 			chunkIndex: 0, // Which chunk is playing.
 			chunkRangeOffset: 0, // Which character inside the chunk's nodes was last spoken.
 			languageVoices: {},
-			voices: defaultUtteranceOptions.voices,
 			rate: defaultUtteranceOptions.rate,
 			pitch: defaultUtteranceOptions.pitch,
 		};

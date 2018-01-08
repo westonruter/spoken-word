@@ -3,6 +3,13 @@ import Speech from './speech';
 export { setLocaleData } from './i18n';
 
 /**
+ * Key for localStorage state persistence.
+ *
+ * @type {string}
+ */
+const STATE_STORAGE_KEY = 'spokenWordState';
+
+/**
  * Mapping speech root elements to their corresponding Speech instances.
  *
  * @type {Map<Element, Speech>}
@@ -88,6 +95,8 @@ function createSpeeches( { element, contentSelector, chunkifyOptions, useDashico
 		} );
 
 		speech.on( 'sharedStateChange', ( state ) => {
+			localStorage.setItem( 'spokenWordState', JSON.stringify( state ) );
+
 			for ( const otherSpeech of speechRootMap.values() ) {
 				if ( otherSpeech !== speech ) {
 					otherSpeech.setState( state );
@@ -98,6 +107,17 @@ function createSpeeches( { element, contentSelector, chunkifyOptions, useDashico
 		speech.initialize();
 	}
 }
+
+// Update speech instances in response to saved state changing in another tab.
+window.addEventListener( 'storage', ( event ) => {
+	if ( STATE_STORAGE_KEY !== event.key || event.storageArea !== localStorage ) {
+		return;
+	}
+	const state = JSON.parse( event.newValue );
+	for ( const speech of speechRootMap.values() ) {
+		speech.setState( state );
+	}
+} );
 
 /**
  * Destroy Speech instances in element.
