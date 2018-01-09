@@ -267,7 +267,13 @@ export default class Speech {
 			}
 			return a.name < b.name ? -1 : 1;
 		} );
-		this._availableVoices = availableVoices;
+
+		// Remove duplicate non-premium which can occur in Safari.
+		const voiceURIs = new Set( availableVoices.map( ( voice ) => voice.voiceURI ) );
+		this._availableVoices = availableVoices.filter( ( voice ) => {
+			return voice.voiceURI.endsWith( '.premium' ) || ! voiceURIs.has( voice.voiceURI + '.premium' );
+		} );
+
 		return availableVoices;
 	}
 
