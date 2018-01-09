@@ -480,7 +480,7 @@ export default class Speech {
 			/**
 			 * Resolve or reject the promise when the utterance ends depending on why it ended.
 			 */
-			this.currentUtterance.onend = () => {
+			const onFinish = () => {
 				this.currentUtterance = null;
 				if ( ! this.state.settingsShown ) {
 					selection.removeAllRanges();
@@ -514,6 +514,11 @@ export default class Speech {
 
 				resolve();
 			};
+
+			this.currentUtterance.onend = onFinish;
+
+			// This is called in Safari when playback is interrupted.
+			this.currentUtterance.onerror = onFinish;
 
 			speechSynthesis.speak( this.currentUtterance );
 		} );
@@ -651,7 +656,7 @@ export default class Speech {
 				if ( this.currentUtterance ) {
 					this.currentUtterance.addEventListener( 'end', resolve );
 				}
-				setTimeout( () => resolve, CANCEL_WAIT_TIMEOUT );
+				setTimeout( () => resolve(), CANCEL_WAIT_TIMEOUT );
 				speechSynthesis.cancel();
 			} else {
 				resolve();
