@@ -125,8 +125,15 @@ export default class PlaybackControls extends Component {
 			} );
 		};
 
+		const classNames = [ 'spoken-word-playback-controls__dialog' ];
+
+		// Temporary measure since Dialog is styled horribly in Safari.
+		if ( navigator.userAgent.indexOf( 'Safari' ) !== -1 && navigator.userAgent.indexOf( 'Chrome' ) === -1 ) {
+			classNames.push( 'spoken-word-playback-controls__dialog--safari' );
+		}
+
 		return (
-			<dialog className="spoken-word-playback-controls__dialog" ref={ saveDialogRef }>
+			<dialog className={ classNames.join( ' ' ) } ref={ saveDialogRef }>
 				<p>
 					<label htmlFor={ this.idPrefix + 'rate' }>{ __( 'Rate:' ) }</label>
 					{ ' ' }

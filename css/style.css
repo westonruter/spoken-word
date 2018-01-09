@@ -53,7 +53,15 @@
 	transform: translateY(-50%);
 }
 
-/* Needed by Safari */
-.spoken-word-playback-controls__dialog:not([open]) {
+/* Needed by Safari, hopefully temporarily */
+.spoken-word-playback-controls__dialog--safari {
+	background: white;
+	color: black;
+	padding: 19px;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	border: solid 3px black;
+}
+.spoken-word-playback-controls__dialog--safari:not([open]) {
 	display: none;
 }
