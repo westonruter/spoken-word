@@ -204,9 +204,6 @@ export default class Speech {
 			this.controlsElement.classList.toggle( 'spoken-word--active', selected );
 		} );
 
-		this.on( 'change:chunkIndex', handleChunkChange );
-		this.on( 'change:chunkRangeOffset', handleChunkChange );
-
 		// Make sure voices get loaded when the settings are shown.
 		this.on( 'change:settingsShown', ( isVisible ) => {
 			if ( isVisible && ! voices.isLoaded() ) {
@@ -226,9 +223,19 @@ export default class Speech {
 				pitch: this.state.pitch,
 			} );
 		};
-		this.on( 'change:languageVoices', handleVoicePropChangeDuringPlayback );
-		this.on( 'change:rate', handleVoicePropChangeDuringPlayback );
-		this.on( 'change:pitch', handleVoicePropChangeDuringPlayback );
+
+		this.on( 'change', ( newProps, oldProps ) => {
+			if ( newProps.chunkIndex !== oldProps.chunkIndex || newProps.chunkRangeOffset !== oldProps.chunkRangeOffset ) {
+				handleChunkChange();
+			}
+			if (
+				newProps.rate !== oldProps.rate ||
+				newProps.pitch !== oldProps.pitch ||
+				( newProps.languageVoices !== oldProps.languageVoices && ! isEqual( newProps.languageVoices, oldProps.languageVoices ) )
+			) {
+				handleVoicePropChangeDuringPlayback();
+			}
+		} );
 	}
 
 	/**
@@ -359,8 +366,7 @@ export default class Speech {
 	getVoice( chunk ) {
 		const languageVoices = this.getLanguageVoices();
 		const baseLanguage = chunk.language.replace( /-.*/, '' ).toLowerCase();
-		let resultingVoice = null;
-		resultingVoice = speechSynthesis.getVoices().find(
+		let resultingVoice = speechSynthesis.getVoices().find(
 			( voice ) => voice.voiceURI === languageVoices[ baseLanguage ]
 		);
 		if ( ! resultingVoice ) {
