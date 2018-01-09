@@ -404,6 +404,11 @@ export default class Speech {
 				nextNodes.map( ( textNode ) => textNode.nodeValue )
 			).join( '' );
 
+			if ( ! text.trim() ) {
+				resolve();
+				return;
+			}
+
 			this.currentUtterance = new SpeechSynthesisUtterance( text );
 			Object.assign( this.currentUtterance, this.getUtteranceOptions( chunk ) );
 
