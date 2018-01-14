@@ -7,7 +7,7 @@
  * @property {Element} root     - Container element, not necessarily the parent.
  */
 
-const DEFAULT_ROOT_WHITELIST_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, q, dt, dd, figcaption';
+const DEFAULT_ROOT_WHITELIST_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, th, td, caption, li, blockquote, q, dt, dd, figcaption';
 const DEFAULT_LEAF_BLACKLIST_SELECTOR = 'sup, sub';
 
 /**
