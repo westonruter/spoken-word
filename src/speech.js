@@ -3,7 +3,7 @@ import React, { render, unmountComponentAtNode } from 'preact-compat';
 import EventEmitter from 'event-emitter';
 import chunkify, { getWeightedChunkLanguages } from './chunkify';
 import * as voices from './voices';
-import { equalRanges } from './helpers';
+import { equalRanges, scrollElementIntoViewIfNeeded } from './helpers';
 import PlaybackControls from './components/PlaybackControls';
 import isEqual from 'lodash/isEqual';
 
@@ -444,19 +444,7 @@ export default class Speech {
 					{ suppressEvents: true }
 				);
 
-				const clientBoundingRect = currentTextNode.parentElement.getBoundingClientRect();
-				const isVisible = (
-					clientBoundingRect.top >= 0 &&
-					clientBoundingRect.left >= 0 &&
-					clientBoundingRect.bottom <= document.documentElement.clientHeight &&
-					clientBoundingRect.right <= document.documentElement.clientWidth
-				);
-				if ( ! isVisible ) {
-					currentTextNode.parentElement.scrollIntoView( {
-						behavior: 'smooth',
-						block: clientBoundingRect.top < 0 ? 'start' : 'end',
-					} );
-				}
+				scrollElementIntoViewIfNeeded( currentTextNode.parentElement );
 
 				while ( nextNodes.length && event.charIndex + firstNodeOffset >= previousSpokenNodesLength + currentTextNode.length ) {
 					previousSpokenNodesLength += currentTextNode.length;

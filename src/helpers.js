@@ -26,3 +26,27 @@ export function uniqueId() {
 	lastId++;
 	return lastId;
 }
+
+/**
+ * Scroll element into view if needed.
+ *
+ * @param {Element} element - Element to scroll into view.
+ * @returns {bool} Whether the element was scrolled into view.
+ */
+export function scrollElementIntoViewIfNeeded( element ) {
+	const clientBoundingRect = element.getBoundingClientRect();
+	const isVisible = (
+		clientBoundingRect.top >= 0 &&
+		clientBoundingRect.left >= 0 &&
+		clientBoundingRect.bottom <= document.documentElement.clientHeight &&
+		clientBoundingRect.right <= document.documentElement.clientWidth
+	);
+	if ( ! isVisible ) {
+		element.scrollIntoView( {
+			behavior: 'smooth',
+			block: clientBoundingRect.top < 0 ? 'start' : 'end',
+		} );
+		return true;
+	}
+	return false;
+}
