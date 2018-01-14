@@ -138,13 +138,14 @@ function getUtteranceOptions() {
 		DEFAULT_UTTERANCE_OPTIONS,
 		customDefaultUtteranceOptions
 	);
+	if ( ! localStorage.getItem( STATE_STORAGE_KEY ) ) {
+		return utteranceOptions;
+	}
 	try {
-		if ( localStorage.getItem( STATE_STORAGE_KEY ) ) {
-			const sharedState = JSON.parse( localStorage.getItem( STATE_STORAGE_KEY ) );
-			for ( const key of Object.keys( DEFAULT_UTTERANCE_OPTIONS ) ) {
-				if ( 'undefined' !== typeof sharedState[ key ] ) {
-					utteranceOptions[ key ] = sharedState[ key ];
-				}
+		const sharedState = JSON.parse( localStorage.getItem( STATE_STORAGE_KEY ) );
+		for ( const key of Object.keys( DEFAULT_UTTERANCE_OPTIONS ) ) {
+			if ( 'undefined' !== typeof sharedState[ key ] ) {
+				utteranceOptions[ key ] = sharedState[ key ];
 			}
 		}
 	} catch ( e ) {
