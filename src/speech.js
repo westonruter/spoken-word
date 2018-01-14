@@ -96,7 +96,7 @@ export default class Speech {
 			containsSelection: false,
 			settingsShown: false,
 			speakTimeoutId: 0, // @todo This can be removed from the state.
-			playback: 'stopped',
+			playing: false,
 			chunkIndex: 0, // Which chunk is playing.
 			chunkRangeOffset: 0, // Which character inside the chunk's nodes was last spoken.
 			languageVoices: {},
@@ -166,24 +166,21 @@ export default class Speech {
 	 * @todo This can be handled in componentDidUpdate.
 	 */
 	setupStateMachine() {
-		this.on( 'change:playback:stopped', () => {
-			speechSynthesis.cancel();
-		} );
-		this.on( 'change:playback:playing', () => {
-			this.startPlayingCurrentChunkAndQueueNext();
-		} );
-
-		this.on( 'change:playback', ( newPlayback, oldPlayback ) => {
-			if ( 'playing' === oldPlayback ) {
+		this.on( 'change:playing', ( playing ) => {
+			if ( playing ) {
+				this.startPlayingCurrentChunkAndQueueNext();
+			} else {
 				clearTimeout( this.state.speakTimeoutId );
+				speechSynthesis.cancel();
 			}
 		} );
+
 		this.on( 'change:speakTimeoutId', ( newTimeoutId, oldTimeoutId ) => {
 			clearTimeout( oldTimeoutId );
 		} );
 
 		const handleChunkChange = () => {
-			if ( 'playing' === this.state.playback ) {
+			if ( this.state.playing ) {
 				this.startPlayingCurrentChunkAndQueueNext();
 			} else {
 				const selection = window.getSelection();
@@ -212,7 +209,7 @@ export default class Speech {
 		} );
 
 		const handleVoicePropChangeDuringPlayback = () => {
-			if ( 'playing' === this.state.playback ) {
+			if ( this.state.playing ) {
 				this.voicePropChanged = true; // Prevent playback from stopping onend.
 				this.startPlayingCurrentChunkAndQueueNext();
 			}
@@ -419,7 +416,7 @@ export default class Speech {
 			Object.assign( this.currentUtterance, this.getUtteranceOptions( chunk ) );
 
 			// Make sure the app state matches the utterance state if it gets interacted with directly.
-			this.currentUtterance.onpause = () => this.setState( { playback: 'stopped' } );
+			this.currentUtterance.onpause = () => this.setState( { playing: false } );
 
 			let previousSpokenNodesLength = 0;
 			let currentChunkRangeOffset = this.state.chunkRangeOffset;
@@ -496,7 +493,7 @@ export default class Speech {
 					return;
 				}
 
-				if ( 'stopped' === this.state.playback ) {
+				if ( ! this.state.playing ) {
 					reject( 'playback_stopped' );
 					return;
 				}
@@ -579,7 +576,7 @@ export default class Speech {
 			}
 
 			// Move current playback to newly selected range if not added programmatically.
-			if ( 'playing' === this.state.playback && this.playbackAddedRange && ! equalRanges( range, this.playbackAddedRange ) ) {
+			if ( this.state.playing && this.playbackAddedRange && ! equalRanges( range, this.playbackAddedRange ) ) {
 				const chunkSelection = this.getChunkPositionFromRange( range );
 				if ( chunkSelection ) {
 					Object.assign( props, chunkSelection );
@@ -596,7 +593,7 @@ export default class Speech {
 	 * @param {Event} event - The keydown event.
 	 */
 	handleEscapeKeydown( event ) {
-		if ( 'playing' === this.state.playback && ESCAPE_KEY_CODE === event.which && ! this.state.settingsShown ) {
+		if ( this.state.playing && ESCAPE_KEY_CODE === event.which && ! this.state.settingsShown ) {
 			this.stop();
 		}
 	}
@@ -608,7 +605,7 @@ export default class Speech {
 	 */
 	play() {
 		const props = {
-			playback: 'playing',
+			playing: true,
 		};
 
 		const chunkSelection = this.getChunkPositionFromRange();
@@ -647,7 +644,7 @@ export default class Speech {
 
 		const reject = ( reason ) => {
 			if ( ! reason || 'playback_interrupted' === reason || 'playback_completed' === reason ) {
-				this.setState( { playback: 'stopped' } );
+				this.setState( { playing: false } );
 			}
 		};
 
@@ -730,14 +727,14 @@ export default class Speech {
 	 * Stop speaking utterance.
 	 */
 	stop() {
-		this.setState( { playback: 'stopped' } );
+		this.setState( { playing: false } );
 	}
 
 	/**
 	 * Destroy speech.
 	 */
 	destroy() {
-		if ( 'playing' === this.state.playback ) {
+		if ( this.state.playing ) {
 			speechSynthesis.cancel();
 		}
 		document.removeEventListener( 'selectionchange', this.updateContainsSelectionState );

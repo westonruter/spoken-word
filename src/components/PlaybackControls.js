@@ -32,7 +32,7 @@ export default class PlaybackControls extends Component {
 	updateDialogState() {
 		if ( ! this.props.settingsShown && this.dialog.open ) {
 			this.dialog.close();
-			if ( this.previousActiveElement && 'playing' !== this.props.playback ) {
+			if ( this.previousActiveElement && ! this.props.playing ) {
 				this.previousActiveElement.focus();
 			}
 		} else if ( this.props.settingsShown && ! this.dialog.open ) {
@@ -175,7 +175,6 @@ export default class PlaybackControls extends Component {
 	 */
 	render() {
 		const classNames = [ 'spoken-word-playback-controls' ];
-		const isPlaying = 'playing' === this.props.playback;
 
 		return (
 			<fieldset className={ classNames.join( ' ' ) }>
@@ -183,10 +182,10 @@ export default class PlaybackControls extends Component {
 
 				<PlaybackButton
 					useDashicon={ this.props.useDashicons }
-					dashicon={ isPlaying ? 'controls-pause' : 'controls-play' }
-					emoji={ isPlaying ? '⏸️' : '▶' }
-					label={ isPlaying ? __( 'Pause' ) : __( 'Play' ) }
-					onClick={ isPlaying ? this.props.stop : this.props.play }
+					dashicon={ this.props.playing ? 'controls-pause' : 'controls-play' }
+					emoji={ this.props.playing ? '⏸️' : '▶' }
+					label={ this.props.playing ? __( 'Pause' ) : __( 'Play' ) }
+					onClick={ this.props.playing ? this.props.stop : this.props.play }
 				/>
 
 				<PlaybackButton useDashicon={ this.props.useDashicons } dashicon="controls-back" emoji="⏪" label={ __( 'Previous' ) } onClick={ this.props.previous } />
@@ -200,7 +199,7 @@ export default class PlaybackControls extends Component {
 }
 
 PlaybackControls.propTypes = {
-	playback: PropTypes.string.isRequired,
+	playing: PropTypes.bool.isRequired,
 	play: PropTypes.func.isRequired,
 	onShowSettings: PropTypes.func.isRequired,
 	onHideSettings: PropTypes.func.isRequired,

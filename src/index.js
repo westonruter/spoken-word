@@ -95,7 +95,10 @@ function createSpeeches( { element, contentSelector, chunkifyOptions, useDashico
 		speechRootMap.set( rootElement, speech );
 
 		// Stop playing all other speeches when playing one.
-		speech.on( 'change:playback:playing', () => {
+		speech.on( 'change:playing', ( playing ) => {
+			if ( ! playing ) {
+				return;
+			}
 			for ( const otherSpeech of speechRootMap.values() ) {
 				if ( otherSpeech !== speech ) {
 					otherSpeech.stop();
