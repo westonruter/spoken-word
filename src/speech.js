@@ -523,8 +523,16 @@ export default class Speech {
 
 			this.currentUtterance.onend = onFinish;
 
-			// This is called in Safari when playback is interrupted.
-			this.currentUtterance.onerror = onFinish;
+			/**
+			 * Clear voicePropChanged flag when error event happens in Safari when changing voice during playback.
+			 *
+			 * Cancelling speech in Safari causes an error event to happen.
+			 */
+			this.currentUtterance.onerror = () => {
+				if ( this.voicePropChanged ) {
+					this.voicePropChanged = false;
+				}
+			};
 
 			speechSynthesis.speak( this.currentUtterance );
 		} );
