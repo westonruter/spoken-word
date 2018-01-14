@@ -655,7 +655,7 @@ export default class Speech {
 				if ( this.currentUtterance ) {
 					this.currentUtterance.addEventListener( 'end', resolve );
 				}
-				setTimeout( () => resolve(), CANCEL_WAIT_TIMEOUT );
+				setTimeout( resolve, CANCEL_WAIT_TIMEOUT );
 				speechSynthesis.cancel();
 			} else {
 				resolve();

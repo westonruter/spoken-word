@@ -135,6 +135,9 @@ export default class PlaybackControls extends Component {
 		return (
 			<dialog className={ classNames.join( ' ' ) } ref={ saveDialogRef }>
 				<p>
+					<a href="https://github.com/westonruter/spoken-word" target="_blank" rel="noopener noreferrer">{ __( 'Spoken Word' ) }</a>
+				</p>
+				<p>
 					<label htmlFor={ this.idPrefix + 'rate' }>{ __( 'Rate:' ) }</label>
 					{ ' ' }
 					<input
