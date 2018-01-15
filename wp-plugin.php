@@ -9,8 +9,10 @@
  *
  * @wordpress-plugin
  * Plugin Name: Spoken Word
- * Description: Add text-to-speech (TTS) to content, with playback controls, read-along highlighting, multi-lingual support, and settings for rate, pitch, and multi-lingual voices.
+ * Description: Add text-to-speech (TTS) to content, with playback controls, read-along highlighting, multi-lingual support, and settings for rate, pitch, and voice.
+ * Plugin URI: https://github.com/westonruter/spoken-word
  * Author: Weston Ruter
+ * Author URI: https://weston.ruter.net/
  * License: GPLv2+
  * Version: 0.1.0
  */

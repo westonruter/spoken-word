@@ -4,3 +4,4 @@ npm-debug.log
 languages/spoken-word.pot
 vendor
 build
+*.zip
