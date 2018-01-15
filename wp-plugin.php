@@ -20,6 +20,25 @@ namespace Spoken_Word;
 const VERSION = '0.1.0';
 
 /**
+ * Show admin notice when dist is not built.
+ */
+function add_build_required_admin_notice() {
+	?>
+	<div class="notice error">
+		<p>
+			<?php esc_html_e( 'You appear to be running Spoken Word from source. You must run the following to do so:', 'spoken-word' ); ?>
+			<code>npm install; npm run build-dist</code>
+		</p>
+	</div>
+	<?php
+}
+
+if ( ! file_exists( __DIR__ . '/dist/spoken-word.js' ) ) {
+	add_action( 'admin_notices', __NAMESPACE__ . '\add_build_required_admin_notice' );
+	return;
+}
+
+/**
  * Enqueue scripts.
  *
  * @since 0.1.0
