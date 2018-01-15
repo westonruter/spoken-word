@@ -23,38 +23,46 @@ Add text-to-speech (TTS) to content, with playback controls, read-along highligh
 * Hit escape to pause during playback.
 * Voice preferences are persistently stored in `localStorage`, with changes synced across windows (of a given site).
 * Ability to use JS in standalone manner (such as in bookmarklet).
-* Todo: Gutenberg block and shortcode to allow control over the appearance of the playback controls and instance properties.
 
 A bookmarklet can be used to load the Spoken Word functionality into any site, even non-WordPress sites where the plugin is not installed. The key is to use the appropriate `contentSelector`:
 
-<pre lang=js>
+<pre lang="js">
 ( () => {
-    const link = document.createElement( 'link' );
-    link.rel = 'stylesheet';
-    link.href = 'https://example.com/wp-content/plugins/spoken-word/css/style.css';
-    document.head.appendChild( link );
+	const link = document.createElement( 'link' );
+	link.rel = 'stylesheet';
+	link.href = 'https://example.com/wp-content/plugins/spoken-word/css/style.css';
+	document.head.appendChild( link );
 
 	const script = document.createElement( 'script' );
 	script.src = 'https://example.com/wp-content/plugins/spoken-word/dist/spoken-word.js';
 	script.addEventListener( 'load', () => {
-	    console.info('uyes');
 		spokenWord.initialize( {
-		    contentSelector: 'article'
+			contentSelector: 'article'
 		} );
 	} );
 	document.head.appendChild( script );
 } )();
 </pre>
 
+The `spokenWord.initialize()` function takes an object as its argument which can have the following properties:
+
+<pre>
+ * @param {string}  contentSelector         - CSS Selector to find the elements for speaking.
+ * @param {Element} rootElement             - Root element within which to look for content.
+ * @param {Object}  chunkifyOptions         - Options passed into chunkify.
+ * @param {boolean} useDashicons            - Whether to use Dashicons.
+ * @param {Object}  defaultUtteranceOptions - Default utterance options when none are supplied from localStorage.
+</pre>
+
 The settings for Spoken Word are presented in an HTML5 `dialog` element. For browsers that do not yet support this feature, the plugin bundles the [dialog-polyfill](https://github.com/GoogleChrome/dialog-polyfill). The polyfill is only included if it is detected the browser does not support `dialog` natively. The inclusion of the polyfill can be disabled by adding the following to your theme or plugin:
 
-<pre lang=php>
+<pre lang="php">
 add_filter( 'spoken_word_include_dialog_polyfill', '__return_false' );
 </pre>
 
 The dialog and the controls are rendered using [Preact](https://preactjs.com/). For a list of all the modules used by this plugin, see the [package.json](https://github.com/westonruter/spoken-word/blob/master/package.json).
 
-This plugin is [developed on GitHub](https://github.com/westonruter/spoken-word). Please [report issues](https://github.com/westonruter/spoken-word/issues) there. Pull requests welcome.
+This plugin is [developed on GitHub](https://github.com/westonruter/spoken-word) where the source can be viewed. Please [report issues](https://github.com/westonruter/spoken-word/issues) there. Pull requests welcome.
 
 == Changelog ==
 

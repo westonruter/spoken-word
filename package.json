@@ -7,6 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "webpack --watch --config webpack.dev.js",
     "build-dist": "webpack --config webpack.prod.js"
+    "build-wp-plugin-zip": "grunt build-release-zip",
+    "deploy-wp-plugin": "grunt deploy"
   },
   "repository": {
     "type": "git",

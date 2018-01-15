@@ -177,11 +177,11 @@ function destroySpeeches( { element, contentSelector } ) {
 /**
  * Initialize.
  *
- * @param {Element} rootElement             - Root element.
  * @param {string}  contentSelector         - CSS Selector to find the elements for speaking.
+ * @param {Element} rootElement             - Root element within which to look for content
  * @param {Object}  chunkifyOptions         - Options passed into chunkify.
  * @param {boolean} useDashicons            - Whether to use Dashicons.
- * @param {Object}  defaultUtteranceOptions - Options passed into chunkify.
+ * @param {Object}  defaultUtteranceOptions - Default utterance options when none are supplied from localStorage.
  * @returns {Promise} Promise.
  */
 export function initialize( {
