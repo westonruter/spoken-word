@@ -9,7 +9,7 @@
  *
  * @wordpress-plugin
  * Plugin Name: Spoken Word
- * Description: Add text-to-speech (TTS) to content, with playback controls, read-along highlighting, multi-lingual support, and settings for rate, pitch, and voice.
+ * Description: Add text-to-speech (TTS) to content, with playback controls, read-along highlighting, multi-lingual support, and settings for rate, pitch, and multi-lingual voices.
  * Author: Weston Ruter
  * License: GPLv2+
  * Version: 0.1.0
@@ -54,22 +54,22 @@ function enqueue_scripts() {
 	wp_enqueue_script( $handle, $src, $deps, VERSION, $in_footer );
 
 	/**
-	 * Filters URL to dialog polyfill script.
+	 * Filters whether the dialog-polyfill should be included.
 	 *
-	 * If filter returns empty value, then polyfill will not be included. If a non-empty value is returned,
-	 * then an inline script will be added which does a document.write() to load the polyfill script
-	 * conditionally if there is no showModal property on a dialog element.
-	 *
-	 * @param string $polyfill_src Polyfill URL.
+	 * @param bool $included Whether included.
 	 */
-	$polyfill_src = apply_filters( 'spoken_word_dialog_polyfill_src', 'https://unpkg.com/dialog-polyfill@0.4.9/dialog-polyfill.js' );
+	$dialog_polyfill_included = apply_filters( 'spoken_word_include_dialog_polyfill', true );
 
-	if ( $polyfill_src ) {
+	if ( $dialog_polyfill_included ) {
 		wp_add_inline_script(
 			$handle,
 			sprintf(
 				'if ( ! ( "showModal" in document.createElement( "dialog" ) ) ) { document.write( %s ); }',
-				wp_json_encode( sprintf( '<script src="%s"></script>', esc_url( $polyfill_src ) ) )
+				wp_json_encode( sprintf(
+					'<script src="%s"></script><link rel="stylesheet" href="%s">',
+					esc_url( plugin_dir_url( __FILE__ ) . 'dist/dialog-polyfill.js' ),
+					esc_url( plugin_dir_url( __FILE__ ) . 'dist/dialog-polyfill.css' )
+				) )
 			)
 		);
 	}

@@ -125,15 +125,8 @@ export default class PlaybackControls extends Component {
 			} );
 		};
 
-		const classNames = [ 'spoken-word-playback-controls__dialog' ];
-
-		// Temporary measure since Dialog is styled horribly in Safari.
-		if ( navigator.userAgent.indexOf( 'Safari' ) !== -1 && navigator.userAgent.indexOf( 'Chrome' ) === -1 ) {
-			classNames.push( 'spoken-word-playback-controls__dialog--safari' );
-		}
-
 		return (
-			<dialog className={ classNames.join( ' ' ) } ref={ saveDialogRef }>
+			<dialog className="spoken-word-playback-controls__dialog" ref={ saveDialogRef }>
 				<p>
 					<a href="https://github.com/westonruter/spoken-word" target="_blank" rel="noopener noreferrer">{ __( 'Spoken Word' ) }</a>
 				</p>

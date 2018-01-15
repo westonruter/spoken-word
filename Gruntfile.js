@@ -12,7 +12,7 @@ module.exports = function( grunt ) {
 				src: [
 					'wp-plugin.php',
 					'css/*.css',
-					'dist/*.js',
+					'dist/*.*',
 					'languages/*.pot',
 					'readme.txt',
 				],

@@ -2,6 +2,8 @@
 
 const path = require( 'path' );
 const CleanWebpackPlugin = require( 'clean-webpack-plugin' );
+const CopyWebpackPlugin = require( 'copy-webpack-plugin' );
+const nodeModulesPath = path.resolve( __dirname, 'node_modules' );
 
 module.exports = {
 	entry: {
@@ -15,6 +17,12 @@ module.exports = {
 	},
 	plugins: [
 		new CleanWebpackPlugin( [ 'dist' ] ),
+		new CopyWebpackPlugin(
+			[
+				nodeModulesPath + '/dialog-polyfill/dialog-polyfill.js',
+				nodeModulesPath + '/dialog-polyfill/dialog-polyfill.css',
+			]
+		),
 	],
 	module: {
 		rules: [

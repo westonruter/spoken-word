@@ -4,6 +4,13 @@
 		<meta charset="utf-8">
 		<title>Spoken Word Test</title>
 		<link rel="stylesheet" href="../css/style.css">
+
+		<link rel="stylesheet" href="../css/style.css">
+		<script type='text/javascript'>
+		if ( ! ( "showModal" in document.createElement( "dialog" ) ) ) {
+			document.write( "<script src=\"https:\/\/src.wordpress-develop.test\/wp-content\/plugins\/spoken-word\/dist\/dialog-polyfill.js\"><\/script><link rel=\"stylesheet\" href=\"https:\/\/src.wordpress-develop.test\/wp-content\/plugins\/spoken-word\/dist\/dialog-polyfill.css\">" );
+		}
+		</script>
 	</head>
 	<body>
 
@@ -56,7 +63,6 @@
 		<div class="new-article-container"></div>
 		<p><button type="button" class="add-article">Add article</button></p>
 
-		<script src="https://unpkg.com/dialog-polyfill@0.4.9/dialog-polyfill.js"></script>
 		<script src="../dist/spoken-word.js"></script>
 		<script>
 		if ( 'undefined' === typeof spokenWord ) {
