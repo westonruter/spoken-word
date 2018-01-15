@@ -12,6 +12,7 @@
  * Description: Add text-to-speech (TTS) to content, with playback controls, read-along highlighting, multi-lingual support, and settings for rate, pitch, and voice.
  * Author: Weston Ruter
  * License: GPLv2+
+ * Version: 0.1.0
  */
 
 namespace Spoken_Word;
@@ -27,9 +28,9 @@ function enqueue_scripts() {
 	wp_enqueue_style( 'dashicons' );
 	wp_enqueue_style( 'spoken-word', plugin_dir_url( __FILE__ ) . 'css/style.css' );
 
-	$handle = 'spoken-word';
-	$src = plugin_dir_url( __FILE__ ) . 'dist/spoken-word.js';
-	$deps = array();
+	$handle    = 'spoken-word';
+	$src       = plugin_dir_url( __FILE__ ) . 'dist/spoken-word.js';
+	$deps      = array();
 	$in_footer = true;
 	wp_enqueue_script( $handle, $src, $deps, VERSION, $in_footer );
 
@@ -64,7 +65,7 @@ function enqueue_scripts() {
 	// Initialize.
 	$exports = array(
 		'contentSelector' => '.hentry .entry-content, .h-entry .e-content, [itemprop="articleBody"]',
-		'useDashicons' => true,
+		'useDashicons'    => true,
 	);
 	wp_add_inline_script( $handle, sprintf( 'spokenWord.initialize( %s );', wp_json_encode( $exports ) ), 'after' );
 
