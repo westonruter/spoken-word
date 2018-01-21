@@ -5,7 +5,7 @@
  * @package   Spoken_Word
  * @author    Weston Ruter
  * @copyright 2018
- * @license   GPL-2.0+
+ * @license   MIT
  *
  * @wordpress-plugin
  * Plugin Name: Spoken Word
@@ -13,7 +13,7 @@
  * Plugin URI: https://github.com/westonruter/spoken-word
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
- * License: GPLv2+
+ * License: MIT
  * Version: 0.1.0
  */
 

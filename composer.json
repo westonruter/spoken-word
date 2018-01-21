@@ -3,7 +3,7 @@
     "description": "Spoken Word",
     "homepage": "https://github.com/westonruter/spoken-word",
     "type": "wordpress-plugin",
-    "license": "GPL-2.0",
+    "license": "MIT",
     "version": "0.1.0",
     "require-dev": {
         "wp-coding-standards/wpcs": "^0.14.0",

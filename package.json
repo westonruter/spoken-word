@@ -3,6 +3,12 @@
   "version": "0.1.0",
   "description": "",
   "main": "dist/spoken-word.js",
+  "files": [
+    "dist/spoken-word.js",
+    "dist/spoken-word.js.map",
+    "css/style.css",
+    "languages/spoken-word.pot"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "webpack --watch --config webpack.dev.js",
@@ -14,8 +20,8 @@
     "type": "git",
     "url": "git+https://github.com/westonruter/spoken-word.git"
   },
-  "author": "Weston Ruter <weston@xwp.co>",
-  "license": "GPL-2.0",
+  "author": "Weston Ruter <weston@ruter.net>",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/westonruter/spoken-word/issues"
   },
