@@ -25,7 +25,7 @@ Add text-to-speech (TTS) to content, with playback controls, read-along highligh
 * Ability to use JS in standalone manner (such as in bookmarklet).
 * Known to work in the latest versions of Chrome, Firefox, and Safari.
 
-(Todo: Video)
+[Try it out](https://westonruter.github.io/spoken-word/test/example.html) on standalone example with some test content.
 
 = Theme Config =
 

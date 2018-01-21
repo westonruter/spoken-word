@@ -28,7 +28,7 @@ Add text-to-speech (TTS) to content, with playback controls, read-along highligh
 * Ability to use JS in standalone manner (such as in bookmarklet).
 * Known to work in the latest versions of Chrome, Firefox, and Safari.
 
-(Todo: Video)
+[Try it out](https://westonruter.github.io/spoken-word/test/example.html) on standalone example with some test content.
 ### Theme Config ###
 The settings for Spoken Word are presented in an HTML5 `dialog` element. For browsers that do not yet support this feature, the plugin bundles the [dialog-polyfill](https://github.com/GoogleChrome/dialog-polyfill). The polyfill is only included if it is detected the browser does not support `dialog` natively. The inclusion of the polyfill can be disabled by adding the following to your theme or plugin:
 
