@@ -16,6 +16,7 @@ Add text-to-speech (TTS) to content, with playback controls, read-along highligh
 
 * Uses local text-to-speech engine in user's browser. Directly interfaces with the `speechSynthesis` browser API. Zero external requests or dependencies.
 * Words are selected/highlighted as they are being spoken to allow you to read along.
+* Skips speaking elements that should not be read, including footnote superscripts (the `sup` element).
 * Pauses of different length added are between headings versus paragraphs.
 * Controls remain in view during playback, with each the current text being spoken persistently being scrolled into view. (Requires browser support for `position:sticky`.)
 * Back/forward controls allow you to skip to the next paragraph; when not speaking, the next paragraph to read will be selected entirely.
@@ -90,7 +91,7 @@ The `spokenWord.initialize()` function takes an object as its argument which can
 
 The dialog and the controls are rendered using [Preact](https://preactjs.com/). For a list of all the modules used by this plugin, see the [package.json](https://github.com/westonruter/spoken-word/blob/master/package.json).
 
-This plugin is [developed on GitHub](https://github.com/westonruter/spoken-word) where the source can be viewed. Please [report issues](https://github.com/westonruter/spoken-word/issues) there. Pull requests welcome. The `spoken-word` package is alsoo [published on NPM](https://www.npmjs.com/package/spoken-word).
+This plugin is [developed on GitHub](https://github.com/westonruter/spoken-word) where the source can be viewed. Please [report issues](https://github.com/westonruter/spoken-word/issues) there. Pull requests welcome. The `spoken-word` package is also [published on npm](https://www.npmjs.com/package/spoken-word).
 
 == Screenshots ==
 
