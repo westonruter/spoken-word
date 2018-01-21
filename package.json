@@ -4,7 +4,10 @@
   "description": "",
   "main": "dist/spoken-word.js",
   "files": [
-    "dist"
+    "dist/spoken-word.js",
+    "dist/spoken-word.js.map",
+    "css/style.css",
+    "languages/spoken-word.pot"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
