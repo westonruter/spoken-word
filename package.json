@@ -4,6 +4,7 @@
   "description": "",
   "main": "dist/spoken-word.js",
   "files": [
+    "src/",
     "dist/spoken-word.js",
     "dist/spoken-word.js.map",
     "css/style.css",
