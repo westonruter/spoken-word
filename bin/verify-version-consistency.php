@@ -3,6 +3,11 @@
 /**
  * Verify versions referenced in plugin match.
  *
+ * phpcs:disable WordPress.WP.AlternativeFunctions.file_system_read_file_get_contents
+ * phpcs:disable WordPress.WP.AlternativeFunctions.file_system_read_fwrite
+ * phpcs:disable WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+ * phpcs:disable WordPress.WP.AlternativeFunctions.json_encode_json_encode
+ *
  * @codeCoverageIgnore
  * @package Spoken_Word
  */
@@ -44,7 +49,7 @@ foreach ( glob( dirname( __FILE__ ) . '/../*.php' ) as $file ) {
 		continue;
 	}
 	if ( ! preg_match( '/\*\s*Version:\s*(?P<version>\d+\.\d+(?:.\d+)?)/', $plugin_file, $matches ) ) {
-		echo "Could not find version in readme metadata ($plugin_file)\n";
+		echo "Could not find version in readme metadata ($plugin_file)\n"; // WPCS: XSS OK.
 		exit( 1 );
 	}
 	$versions['plugin.php#metadata'] = $matches['version'];
