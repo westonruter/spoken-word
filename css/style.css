@@ -51,4 +51,18 @@
 	position: fixed;
 	top: 50%;
 	transform: translateY(-50%);
+	width: 300px;
+	max-height: 100%;
+	overflow: auto;
+}
+.spoken-word-playback-controls__label {
+	display: block;
+}
+.spoken-word-playback-controls__input {
+	display: block;
+	width: 100%;
+}
+.spoken-word-playback-controls__heading {
+	font-size: 1.2em;
+	font-weight: bold;
 }

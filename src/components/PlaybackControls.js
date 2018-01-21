@@ -74,13 +74,14 @@ export default class PlaybackControls extends Component {
 			const id = this.idPrefix + 'voice-' + presentLanguage;
 			selects.push(
 				<p key={ presentLanguage }>
-					<label htmlFor={ id }>
+					<label className="spoken-word-playback-controls__label" htmlFor={ id }>
 						{ sprintf( __( 'Voice (%s):' ), presentLanguage ) }
 					</label>
 					{ ' ' }
 					{
 						<select
 							id={ id }
+							className="spoken-word-playback-controls__input"
 							data-language={ presentLanguage }
 							value={ this.props.languageVoices[ presentLanguage ] }
 							onBlur={ updateLanguageVoice }
@@ -127,14 +128,15 @@ export default class PlaybackControls extends Component {
 
 		return (
 			<dialog className="spoken-word-playback-controls__dialog" ref={ saveDialogRef }>
-				<p>
+				<h1 className="spoken-word-playback-controls__heading">
 					<a href="https://github.com/westonruter/spoken-word" target="_blank" rel="noopener noreferrer">{ __( 'Spoken Word' ) }</a>
-				</p>
+				</h1>
 				<p>
-					<label htmlFor={ this.idPrefix + 'rate' }>{ __( 'Rate:' ) }</label>
+					<label className="spoken-word-playback-controls__label" htmlFor={ this.idPrefix + 'rate' }>{ __( 'Rate:' ) }</label>
 					{ ' ' }
 					<input
 						id={ this.idPrefix + 'rate' }
+						className="spoken-word-playback-controls__input"
 						type="number"
 						data-prop="rate"
 						value={ this.props.rate }
@@ -145,10 +147,11 @@ export default class PlaybackControls extends Component {
 					/>
 				</p>
 				<p>
-					<label htmlFor={ this.idPrefix + 'pitch' }>{ __( 'Pitch:' ) }</label>
+					<label className="spoken-word-playback-controls__label" htmlFor={ this.idPrefix + 'pitch' }>{ __( 'Pitch:' ) }</label>
 					{ ' ' }
 					<input
 						id={ this.idPrefix + 'pitch' }
+						className="spoken-word-playback-controls__input"
 						type="number"
 						data-prop="pitch"
 						value={ this.props.pitch }
