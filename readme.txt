@@ -3,7 +3,7 @@ Contributors: westonruter
 Tags: tts, speech-synthesis, text-to-speech, audio, voice, read-along
 Requires at least: 4.7
 Tested up to: 4.9
-Stable tag: 0.1.0
+Stable tag: 1.0.0
 License: MIT
 License URI: https://en.wikipedia.org/wiki/MIT_License
 Requires PHP: 5.4
@@ -98,6 +98,6 @@ This plugin is [developed on GitHub](https://github.com/westonruter/spoken-word)
 
 == Changelog ==
 
-= 0.1.0 (Unreleased) =
+= 1.0.0 (2018-01-20) =
 
 * Initial release.

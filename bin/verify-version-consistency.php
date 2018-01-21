@@ -1,4 +1,4 @@
-#!/usr/bin/env
+#!/usr/bin/env php
 <?php
 /**
  * Verify versions referenced in plugin match.
