@@ -12,6 +12,8 @@ Add text-to-speech (TTS) to content, with playback controls, read-along highligh
 
 == Description ==
 
+Add text-to-speech (TTS) to content, with playback controls, read-along highlighting, multi-lingual support, and settings for rate, pitch, and voice.
+
 * Uses local text-to-speech engine in user's browser. Directly interfaces with the `speechSynthesis` browser API. Zero external requests or dependencies.
 * Words are selected/highlighted as they are being spoken to allow you to read along.
 * Pauses of different length added are between headings versus paragraphs.
