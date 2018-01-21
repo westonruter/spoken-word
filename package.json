@@ -1,6 +1,6 @@
 {
   "name": "spoken-word",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "dist/spoken-word.js",
   "files": [

@@ -7,7 +7,7 @@ Add text-to-speech (TTS) to content, with playback controls, read-along highligh
 **Tags:** [tts](https://wordpress.org/plugins/tags/tts), [speech-synthesis](https://wordpress.org/plugins/tags/speech-synthesis), [text-to-speech](https://wordpress.org/plugins/tags/text-to-speech), [audio](https://wordpress.org/plugins/tags/audio), [voice](https://wordpress.org/plugins/tags/voice), [read-along](https://wordpress.org/plugins/tags/read-along)  
 **Requires at least:** 4.7  
 **Tested up to:** 4.9  
-**Stable tag:** 1.0.0  
+**Stable tag:** 1.0.1  
 **License:** [MIT](https://en.wikipedia.org/wiki/MIT_License)  
 **Requires PHP:** 5.4  
 
@@ -110,7 +110,10 @@ This plugin is [developed on GitHub](https://github.com/westonruter/spoken-word)
 
 ## Changelog ##
 
+### 1.0.1 (2018-01-21) ###
+Disable functionality in Android and iOS devices by default.
+
 ### 1.0.0 (2018-01-20) ###
-* Initial release.
+Initial release.
 
 
