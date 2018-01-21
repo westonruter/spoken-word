@@ -15,7 +15,8 @@
     "dev": "webpack --watch --config webpack.dev.js",
     "build-dist": "webpack --config webpack.prod.js",
     "build-wp-plugin-zip": "grunt build-release-zip",
-    "deploy-wp-plugin": "grunt deploy"
+    "deploy-wp-plugin": "grunt deploy",
+    "deploy-gh-pages": "bash bin/deploy-gh-pages.sh"
   },
   "repository": {
     "type": "git",
