@@ -16,14 +16,16 @@
 	<body>
 		<h1>Spoken Word Test</h1>
 		<p>This page a bunch of random text thrown together while developing to test and demonstrate the functionality. Some of the content is copied from the Wikipedia article on “<a href="https://en.wikipedia.org/wiki/Bison">Bison</a>”. For best results, also have installed a Spanish voice via your system's speech preferences. This test shows that speech can switch between languages. It also shows that controls are dynamically added when new articles are added to the document.</p>
+		<p>The functionality is disabled on Android and iOS devices because <code>speechSynthesis</code> is not implemented well enough on those platforms or there are issues with range selection on touch devices (you can <a href="?mobileEnabeled=true">force it on</a>). So please test the following on Chrome, Firefox, or Safari on a desktop device (tested on OSX).</p>
 
+		<hr>
 		<article class="hentry">
 			<header>
 				<h1>First</h1>
 			</header>
 			<div class="entry-content">
 				<p>Let me tell you <i lang="es">sobre mi animal favorito</i>.</p>
-				<h1>Great Creature</h1>
+				<h2>Great Creature</h2>
 				<p lang="es-MX">¡Este <i lang="en">animal</i> me gusta mucho!</p>
 				<p><b>Bison</b> super-interesting and 'twas <i lang=es>grandes</i> are.</p>
 				<p>The <!-- --> Bison <!-- --> are—please take my word for<!-- --> it—very <!-- --> super-interesting,  “and” <span lang="es">y ¿por qué?</span> <!-- -->  they <!-- --> are <a href="https://en.wikipedia.org/wiki/Even-toed_ungulate" title="Even-toed ungulate">even-toed ungulates</a> in the genus <i>Bison</i><sup><a href="https://en.wikipedia.org/wiki/Bison#Evolution_and_genetic_history">wikipedia</a></sup> within the subfamily <a href="https://en.wikipedia.org/wiki/Bovinae" title="Bovinae">Bovinae</a>.</p>
@@ -70,7 +72,11 @@
 		if ( 'undefined' === typeof spokenWord ) {
 			alert( "You must run webpack build." );
 		}
-		spokenWord.initialize();
+		var args = {};
+		if ( /mobileEnabeled/i.test( location.href ) ) {
+			args.hasSystemSupport = () => true;
+		}
+		spokenWord.initialize( args );
 
 		document.querySelector( '.add-article' ).addEventListener( 'click', function() {
 			var article = document.createElement( 'article' );

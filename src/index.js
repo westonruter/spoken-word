@@ -175,13 +175,24 @@ function destroySpeeches( { element, contentSelector } ) {
 }
 
 /**
+ * Determine if system has support.
+ *
+ * @todo This needs to be revisited in the future.
+ * @return {boolean} Whether the system has support. Returns if not Android or iOS.
+ */
+const HAS_SYSTEM_SUPPORT = () => {
+	return ! /\b(Android|iPhone|iPad|iPod)\b/i.test( navigator.userAgent );
+};
+
+/**
  * Initialize.
  *
- * @param {string}  contentSelector         - CSS Selector to find the elements for speaking.
- * @param {Element} rootElement             - Root element within which to look for content
- * @param {Object}  chunkifyOptions         - Options passed into chunkify.
- * @param {boolean} useDashicons            - Whether to use Dashicons.
- * @param {Object}  defaultUtteranceOptions - Default utterance options when none are supplied from localStorage.
+ * @param {string}   contentSelector         - CSS Selector to find the elements for speaking.
+ * @param {Element}  rootElement             - Root element within which to look for content
+ * @param {Object}   chunkifyOptions         - Options passed into chunkify.
+ * @param {boolean}  useDashicons            - Whether to use Dashicons.
+ * @param {Object}   defaultUtteranceOptions - Default utterance options when none are supplied from localStorage.
+ * @param {Function} hasSystemSupport        - Function which determines whether the user's operating supports the functionality. Defaults to return false on iOS or Android.
  * @returns {Promise} Promise.
  */
 export function initialize( {
@@ -190,12 +201,17 @@ export function initialize( {
 	useDashicons,
 	chunkifyOptions,
 	defaultUtteranceOptions = DEFAULT_UTTERANCE_OPTIONS,
+	hasSystemSupport = HAS_SYSTEM_SUPPORT,
 } = {} ) {
 	customDefaultUtteranceOptions = defaultUtteranceOptions;
 
 	return new Promise( ( resolve, reject ) => {
 		if ( typeof speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined' ) {
 			reject( 'speech_synthesis_not_supported' );
+			return;
+		}
+		if ( ! hasSystemSupport() ) {
+			reject( 'system_not_supported' );
 			return;
 		}
 

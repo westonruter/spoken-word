@@ -29,7 +29,7 @@ Add text-to-speech (TTS) to content, with playback controls, read-along highligh
 * Hit escape to pause during playback.
 * Voice preferences are persistently stored in `localStorage`, with changes synced across windows (of a given site).
 * Ability to use JS in standalone manner (such as in bookmarklet).
-* Known to work in the latest versions of Chrome, Firefox, and Safari.
+* Known to work in the latest desktop versions of Chrome, Firefox, and Safari. (Tested on OSX.) It does not work reliably in mobile/touch browsers on Android or iOS, apparently due both to the (still experimental) `speechSynthesis` API not being implemented well enough on those systems and/or programmatic range selection does not work the same way as on desktop. For these reasons, the functionality is disabled by default on mobile operating systems.
 
 [Try it out](https://westonruter.github.io/spoken-word/test/example.html) on standalone example with some test content.
 ### Theme Config ###
@@ -59,14 +59,14 @@ A bookmarklet can be used to load the Spoken Word functionality into any site, e
 ( () => {
 	const link = document.createElement( 'link' );
 	link.rel = 'stylesheet';
-	link.href = 'https://unpkg.com/spoken-word/css/spoken-word.css';
+	link.href = 'https://unpkg.com/spoken-word/css/style.css';
 	document.head.appendChild( link );
 
 	const script = document.createElement( 'script' );
 	script.src = 'https://unpkg.com/spoken-word/dist/spoken-word.js';
 	script.addEventListener( 'load', () => {
 		spokenWord.initialize( {
-			contentSelector: [ // 👈 Amend as desired.
+			contentSelector: [ /* 👈 Amend as desired. */
 				'.hentry',
 				'.entry-content',
 				'.h-entry',
