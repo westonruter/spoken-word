@@ -4,7 +4,7 @@
     "homepage": "https://github.com/westonruter/spoken-word",
     "type": "wordpress-plugin",
     "license": "MIT",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "require-dev": {
         "wp-coding-standards/wpcs": "^0.14.0",
         "dealerdirect/phpcodesniffer-composer-installer": "^0.4.4",

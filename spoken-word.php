@@ -14,12 +14,12 @@
  * Author: Weston Ruter
  * Author URI: https://weston.ruter.net/
  * License: MIT
- * Version: 0.1.0
+ * Version: 1.0.0
  */
 
 namespace Spoken_Word;
 
-const VERSION = '0.1.0';
+const VERSION = '1.0.0';
 
 /**
  * Show admin notice when dist is not built.

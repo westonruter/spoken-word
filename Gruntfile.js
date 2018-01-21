@@ -10,7 +10,7 @@ module.exports = function( grunt ) {
 		copy: {
 			build: {
 				src: [
-					'wp-plugin.php',
+					'spoken-word.php',
 					'css/*.css',
 					'dist/*.*',
 					'languages/*.pot',

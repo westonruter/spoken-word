@@ -3,7 +3,7 @@ Contributors: westonruter
 Tags: tts, speech-synthesis, text-to-speech, audio, voice, read-along
 Requires at least: 4.7
 Tested up to: 4.9
-Stable tag: 0.1.0
+Stable tag: 1.0.0
 License: MIT
 License URI: https://en.wikipedia.org/wiki/MIT_License
 Requires PHP: 5.4
@@ -12,8 +12,11 @@ Add text-to-speech (TTS) to content, with playback controls, read-along highligh
 
 == Description ==
 
+Add text-to-speech (TTS) to content, with playback controls, read-along highlighting, multi-lingual support, and settings for rate, pitch, and voice.
+
 * Uses local text-to-speech engine in user's browser. Directly interfaces with the `speechSynthesis` browser API. Zero external requests or dependencies.
 * Words are selected/highlighted as they are being spoken to allow you to read along.
+* Skips speaking elements that should not be read, including footnote superscripts (the `sup` element).
 * Pauses of different length added are between headings versus paragraphs.
 * Controls remain in view during playback, with each the current text being spoken persistently being scrolled into view. (Requires browser support for `position:sticky`.)
 * Back/forward controls allow you to skip to the next paragraph; when not speaking, the next paragraph to read will be selected entirely.
@@ -23,7 +26,7 @@ Add text-to-speech (TTS) to content, with playback controls, read-along highligh
 * Hit escape to pause during playback.
 * Voice preferences are persistently stored in `localStorage`, with changes synced across windows (of a given site).
 * Ability to use JS in standalone manner (such as in bookmarklet).
-* Known to work in the latest versions of Chrome, Firefox, and Safari.
+* Known to work in the latest desktop versions of Chrome, Firefox, and Safari. (Tested on OSX.) It does not work reliably in mobile/touch browsers on Android or iOS, apparently due both to the (still experimental) `speechSynthesis` API not being implemented well enough on those systems and/or programmatic range selection does not work the same way as on desktop. For these reasons, the functionality is disabled by default on mobile operating systems.
 
 [Try it out](https://westonruter.github.io/spoken-word/test/example.html) on standalone example with some test content.
 
@@ -56,14 +59,14 @@ A bookmarklet can be used to load the Spoken Word functionality into any site, e
 ( () => {
 	const link = document.createElement( 'link' );
 	link.rel = 'stylesheet';
-	link.href = 'https://unpkg.com/spoken-word/css/spoken-word.css';
+	link.href = 'https://unpkg.com/spoken-word/css/style.css';
 	document.head.appendChild( link );
 
 	const script = document.createElement( 'script' );
 	script.src = 'https://unpkg.com/spoken-word/dist/spoken-word.js';
 	script.addEventListener( 'load', () => {
 		spokenWord.initialize( {
-			contentSelector: [ // 👈 Amend as desired.
+			contentSelector: [ /* 👈 Amend as desired. */
 				'.hentry',
 				'.entry-content',
 				'.h-entry',
@@ -88,7 +91,7 @@ The `spokenWord.initialize()` function takes an object as its argument which can
 
 The dialog and the controls are rendered using [Preact](https://preactjs.com/). For a list of all the modules used by this plugin, see the [package.json](https://github.com/westonruter/spoken-word/blob/master/package.json).
 
-This plugin is [developed on GitHub](https://github.com/westonruter/spoken-word) where the source can be viewed. Please [report issues](https://github.com/westonruter/spoken-word/issues) there. Pull requests welcome. The `spoken-word` package is alsoo [published on NPM](https://www.npmjs.com/package/spoken-word).
+This plugin is [developed on GitHub](https://github.com/westonruter/spoken-word) where the source can be viewed. Please [report issues](https://github.com/westonruter/spoken-word/issues) there. Pull requests welcome. The `spoken-word` package is also [published on npm](https://www.npmjs.com/package/spoken-word).
 
 == Screenshots ==
 
@@ -98,6 +101,6 @@ This plugin is [developed on GitHub](https://github.com/westonruter/spoken-word)
 
 == Changelog ==
 
-= 0.1.0 (Unreleased) =
+= 1.0.0 (2018-01-20) =
 
 * Initial release.

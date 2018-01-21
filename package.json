@@ -1,9 +1,10 @@
 {
   "name": "spoken-word",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "",
   "main": "dist/spoken-word.js",
   "files": [
+    "src/",
     "dist/spoken-word.js",
     "dist/spoken-word.js.map",
     "css/style.css",
@@ -14,7 +15,8 @@
     "dev": "webpack --watch --config webpack.dev.js",
     "build-dist": "webpack --config webpack.prod.js",
     "build-wp-plugin-zip": "grunt build-release-zip",
-    "deploy-wp-plugin": "grunt deploy"
+    "deploy-wp-plugin": "grunt deploy",
+    "deploy-gh-pages": "bash bin/deploy-gh-pages.sh"
   },
   "repository": {
     "type": "git",
