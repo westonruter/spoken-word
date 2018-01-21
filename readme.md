@@ -8,7 +8,7 @@ Add text-to-speech (TTS) to content, with playback controls, read-along highligh
 **Requires at least:** 4.7  
 **Tested up to:** 4.9  
 **Stable tag:** 0.1.0  
-**License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
+**License:** [MIT](https://en.wikipedia.org/wiki/MIT_License)  
 **Requires PHP:** 5.4  
 
 [![Build Status](https://travis-ci.org/westonruter/spoken-word.svg?branch=master)](https://travis-ci.org/westonruter/spoken-word) [![Built with Grunt](https://cdn.gruntjs.com/builtwith.svg)](http://gruntjs.com) 
