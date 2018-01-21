@@ -68,7 +68,7 @@ function enqueue_scripts() {
 			sprintf(
 				'if ( ! ( "showModal" in document.createElement( "dialog" ) ) ) { document.write( %s ); }',
 				wp_json_encode( sprintf(
-					'<script src="%s"></script><link rel="stylesheet" href="%s">',
+					'<script src="%s"></script><link rel="stylesheet" href="%s">', // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet, WordPress.WP.EnqueuedResources.NonEnqueuedScript
 					esc_url( plugin_dir_url( __FILE__ ) . 'dist/dialog-polyfill.js' ),
 					esc_url( plugin_dir_url( __FILE__ ) . 'dist/dialog-polyfill.css' )
 				) )
@@ -79,7 +79,7 @@ function enqueue_scripts() {
 	// Export locale data.
 	wp_add_inline_script(
 		'spoken-word',
-		'spokenWord.setLocaleData( ' . json_encode( get_jed_locale_data( 'spoken-word' ) ) . ' );',
+		'spokenWord.setLocaleData( ' . wp_json_encode( get_jed_locale_data( 'spoken-word' ) ) . ' );',
 		'after'
 	);
 
