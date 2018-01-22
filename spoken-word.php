@@ -47,7 +47,7 @@ if ( ! file_exists( __DIR__ . '/dist/spoken-word.js' ) ) {
  */
 function enqueue_scripts() {
 	wp_enqueue_style( 'dashicons' );
-	wp_enqueue_style( 'spoken-word', plugin_dir_url( __FILE__ ) . 'css/style.css' );
+	wp_enqueue_style( 'spoken-word', plugin_dir_url( __FILE__ ) . 'css/style.css', array(), VERSION );
 
 	$handle    = 'spoken-word';
 	$src       = plugin_dir_url( __FILE__ ) . 'dist/spoken-word.js';
